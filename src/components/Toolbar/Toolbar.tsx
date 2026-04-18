@@ -1,6 +1,7 @@
 import { RefObject, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { AppState, BackgroundStyle, LanguageKey } from '../../types';
+import { encodeSnippetToUrl } from '../../utils/urlShare';
 import {
   LANGUAGE_OPTIONS,
   FONT_SIZE_MIN,
@@ -30,6 +31,7 @@ interface ToolbarProps {
   isSaved: boolean;
   onSave: () => void;
   onNew: () => void;
+  appState: AppState;
 }
 
 export default function Toolbar({
@@ -50,9 +52,22 @@ export default function Toolbar({
   isSaved,
   onSave,
   onNew,
+  appState,
 }: ToolbarProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
+
+  const handleShareUrl = async () => {
+    const url = encodeSnippetToUrl(appState);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      prompt('Copy this URL to share:', url);
+    }
+    setUrlCopied(true);
+    setTimeout(() => setUrlCopied(false), 2500);
+  };
 
   const handleCopy = async () => {
     try {
@@ -159,6 +174,28 @@ export default function Toolbar({
               <polyline points="7 3 7 8 15 8" />
             </svg>
             <span>{isSaved ? 'Saved ✓' : 'Save'}</span>
+          </button>
+
+          {/* Share URL */}
+          <button
+            className={`${styles.btn} ${urlCopied ? styles.btnSuccess : ''}`}
+            onClick={handleShareUrl}
+            title="Copy share URL (works on any device)"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {urlCopied ? (
+                <polyline points="20 6 9 17 4 12" />
+              ) : (
+                <>
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </>
+              )}
+            </svg>
+            <span>{urlCopied ? 'Copied!' : 'Share'}</span>
           </button>
 
           {/* Divider */}

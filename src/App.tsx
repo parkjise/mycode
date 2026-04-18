@@ -7,6 +7,7 @@ import {
   CARD_WIDTH_DEFAULT,
 } from './constants';
 import { useSnippets } from './hooks/useSnippets';
+import { decodeSnippetFromUrl, clearUrlHash } from './utils/urlShare';
 import Toolbar from './components/Toolbar/Toolbar';
 import CodeInput from './components/CodeInput/CodeInput';
 import CodePreview from './components/CodePreview/CodePreview';
@@ -14,16 +15,24 @@ import Sidebar from './components/Sidebar/Sidebar';
 import SaveModal from './components/SaveModal/SaveModal';
 import styles from './App.module.css';
 
-const freshState = (): AppState => ({
-  code: DEFAULT_CODE,
-  language: 'tsx',
-  fileName: 'UserCard.tsx',
-  theme: 'dark',
-  fontSize: FONT_SIZE_DEFAULT,
-  padding: PADDING_DEFAULT,
-  backgroundStyle: 'gradient',
-  cardWidth: CARD_WIDTH_DEFAULT,
-});
+const freshState = (): AppState => {
+  // URL 공유 링크로 접속한 경우 해당 스니펫을 복원
+  const fromUrl = decodeSnippetFromUrl();
+  if (fromUrl) {
+    clearUrlHash();
+    return fromUrl as AppState;
+  }
+  return {
+    code: DEFAULT_CODE,
+    language: 'tsx',
+    fileName: 'UserCard.tsx',
+    theme: 'dark',
+    fontSize: FONT_SIZE_DEFAULT,
+    padding: PADDING_DEFAULT,
+    backgroundStyle: 'gradient',
+    cardWidth: CARD_WIDTH_DEFAULT,
+  };
+};
 
 export default function App() {
   const [state, setState] = useState<AppState>(freshState);
@@ -43,6 +52,8 @@ export default function App() {
     addCategory,
     renameCategory,
     deleteCategory,
+    exportLibrary,
+    importLibrary,
   } = useSnippets();
 
   const update = <K extends keyof AppState>(key: K, value: AppState[K]) => {
@@ -204,6 +215,8 @@ export default function App() {
           onDeleteCategory={deleteCategory}
           onRenameCategory={renameCategory}
           isCollapsed={!sidebarOpen}
+          onExport={exportLibrary}
+          onImport={importLibrary}
         />
 
         {/* Right: toolbar + main */}
@@ -228,6 +241,7 @@ export default function App() {
             isSaved={savedFeedback}
             onSave={handleSave}
             onNew={handleNew}
+            appState={state}
           />
 
           <main className={styles.main}>

@@ -115,6 +115,61 @@ export function useSnippets() {
     });
   }, []);
 
+  // ─── Export / Import ────────────────────────────────────────
+
+  const exportLibrary = useCallback(() => {
+    const data = JSON.stringify({ categories, snippets }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snipshot-library-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [categories, snippets]);
+
+  const importLibrary = useCallback(
+    (file: File, mode: 'replace' | 'merge') => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target?.result as string) as {
+            categories: Category[];
+            snippets: Snippet[];
+          };
+          if (!parsed.categories || !parsed.snippets) return;
+
+          if (mode === 'replace') {
+            setCategories(parsed.categories);
+            setSnippets(parsed.snippets);
+            persist(CATEGORIES_KEY, parsed.categories);
+            persist(SNIPPETS_KEY, parsed.snippets);
+          } else {
+            // merge: 기존 id와 중복되지 않는 항목만 추가
+            setCategories((prev) => {
+              const existingIds = new Set(prev.map((c) => c.id));
+              const newCats = parsed.categories.filter((c) => !existingIds.has(c.id));
+              const next = [...prev, ...newCats];
+              persist(CATEGORIES_KEY, next);
+              return next;
+            });
+            setSnippets((prev) => {
+              const existingIds = new Set(prev.map((s) => s.id));
+              const newSnips = parsed.snippets.filter((s) => !existingIds.has(s.id));
+              const next = [...newSnips, ...prev];
+              persist(SNIPPETS_KEY, next);
+              return next;
+            });
+          }
+        } catch {
+          alert('Invalid file format. Please use a SnipShot export file.');
+        }
+      };
+      reader.readAsText(file);
+    },
+    []
+  );
+
   return {
     categories,
     snippets,
@@ -127,5 +182,7 @@ export function useSnippets() {
     addCategory,
     renameCategory,
     deleteCategory,
+    exportLibrary,
+    importLibrary,
   };
 }

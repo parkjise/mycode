@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Category, Snippet } from '../../types';
 import { LANGUAGE_OPTIONS } from '../../constants';
 import styles from './Sidebar.module.css';
@@ -13,6 +13,8 @@ interface SidebarProps {
   onDeleteCategory: (id: string) => void;
   onRenameCategory: (id: string, name: string) => void;
   isCollapsed: boolean;
+  onExport: () => void;
+  onImport: (file: File, mode: 'replace' | 'merge') => void;
 }
 
 export default function Sidebar({
@@ -25,7 +27,27 @@ export default function Sidebar({
   onDeleteCategory,
   onRenameCategory,
   isCollapsed,
+  onExport,
+  onImport,
 }: SidebarProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingFile(file);
+    setShowImportConfirm(true);
+    e.target.value = '';
+  };
+
+  const confirmImport = (mode: 'replace' | 'merge') => {
+    if (pendingFile) onImport(pendingFile, mode);
+    setShowImportConfirm(false);
+    setPendingFile(null);
+  };
+
   const [expandedCats, setExpandedCats] = useState<Set<string>>(
     new Set(categories.map((c) => c.id))
   );
@@ -239,6 +261,68 @@ export default function Sidebar({
             );
           })}
         </div>
+
+        {/* Footer: Export / Import */}
+        <div className={styles.sidebarFooter}>
+          <button className={styles.footerBtn} onClick={onExport} title="Export library as JSON">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export
+          </button>
+
+          <button
+            className={styles.footerBtn}
+            onClick={() => fileInputRef.current?.click()}
+            title="Import library from JSON"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Import
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+        </div>
+
+        {/* Import confirm dialog */}
+        {showImportConfirm && (
+          <div className={styles.importConfirm}>
+            <p className={styles.importTitle}>Import snippets</p>
+            <p className={styles.importDesc}>
+              <strong>{pendingFile?.name}</strong>
+            </p>
+            <div className={styles.importActions}>
+              <button
+                className={styles.importMergeBtn}
+                onClick={() => confirmImport('merge')}
+              >
+                Merge
+                <span>기존 유지 + 추가</span>
+              </button>
+              <button
+                className={styles.importReplaceBtn}
+                onClick={() => confirmImport('replace')}
+              >
+                Replace
+                <span>전체 교체</span>
+              </button>
+            </div>
+            <button className={styles.importCancelBtn} onClick={() => setShowImportConfirm(false)}>
+              Cancel
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Context menu */}

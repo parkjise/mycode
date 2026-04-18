@@ -7,6 +7,7 @@
   flex-direction: column;
   overflow: hidden;
   transition: width var(--transition);
+  position: relative;
 }
 
 /* ─── Search ──────────────────────────────────────────────────── */
@@ -264,6 +265,145 @@
 .ctxDanger:hover {
   background: rgba(248, 113, 113, 0.1);
   color: var(--danger);
+}
+
+/* ─── Footer: Export / Import ────────────────────────────────── */
+.sidebarFooter {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-toolbar);
+}
+
+.footerBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 28px;
+  background: var(--bg-control);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.footerBtn:hover {
+  background: var(--bg-control-hover);
+  color: var(--text-primary);
+}
+
+/* ─── Import confirm ─────────────────────────────────────────── */
+.importConfirm {
+  position: absolute;
+  bottom: 56px;
+  left: 8px;
+  right: 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 14px;
+  z-index: 10;
+  animation: slideUp 150ms ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.importTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.importDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.importActions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.importMergeBtn,
+.importReplaceBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 7px 4px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all var(--transition);
+}
+
+.importMergeBtn span,
+.importReplaceBtn span {
+  font-size: 9px;
+  font-weight: 400;
+  margin-top: 2px;
+  opacity: 0.7;
+}
+
+.importMergeBtn {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text-accent);
+}
+
+.importMergeBtn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.importReplaceBtn {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.importReplaceBtn:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.importCancelBtn {
+  width: 100%;
+  height: 26px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.importCancelBtn:hover {
+  background: var(--bg-control-hover);
+  color: var(--text-primary);
 }
 
 /* ─── Responsive ──────────────────────────────────────────────── */

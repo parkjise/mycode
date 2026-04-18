@@ -1,0 +1,226 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - button "Toggle sidebar" [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e9]:
+        - generic [ref=e10]: ❯
+        - generic [ref=e11]: SnipShot
+        - generic [ref=e12]: Code Snippet Generator
+    - button "Toggle theme" [ref=e14] [cursor=pointer]:
+      - text: ☀️
+      - generic [ref=e15]: Light
+  - generic [ref=e16]:
+    - complementary [ref=e17]:
+      - generic [ref=e18]:
+        - img
+        - textbox "Search snippets..." [ref=e19]
+      - generic [ref=e21]: 0 snippets
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+            - generic [ref=e28]: General
+            - generic [ref=e29]: "0"
+          - generic [ref=e31]: No snippets yet
+        - generic [ref=e32]:
+          - generic [ref=e33] [cursor=pointer]:
+            - img [ref=e34]
+            - generic [ref=e37]: JavaScript
+            - generic [ref=e38]: "0"
+          - generic [ref=e40]: No snippets yet
+        - generic [ref=e41]:
+          - generic [ref=e42] [cursor=pointer]:
+            - img [ref=e43]
+            - generic [ref=e46]: TypeScript
+            - generic [ref=e47]: "0"
+          - generic [ref=e49]: No snippets yet
+        - generic [ref=e50]:
+          - generic [ref=e51] [cursor=pointer]:
+            - img [ref=e52]
+            - generic [ref=e55]: React
+            - generic [ref=e56]: "0"
+          - generic [ref=e58]: No snippets yet
+        - generic [ref=e59]:
+          - generic [ref=e60] [cursor=pointer]:
+            - img [ref=e61]
+            - generic [ref=e64]: CSS / Styles
+            - generic [ref=e65]: "0"
+          - generic [ref=e67]: No snippets yet
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - generic [ref=e72]: Language
+            - combobox [ref=e73] [cursor=pointer]:
+              - option "JavaScript"
+              - option "TypeScript"
+              - option "JSX"
+              - option "TSX" [selected]
+              - option "Styled Components"
+              - option "SCSS Mixins"
+              - option "CSS Variables"
+              - option "Theme Config"
+              - option "JSON"
+              - option "Bash / Shell"
+          - generic [ref=e74]:
+            - generic [ref=e75]: File Name
+            - textbox "filename.tsx" [ref=e76]: UserCard.tsx
+          - generic [ref=e77]:
+            - generic [ref=e78]: Background
+            - generic [ref=e79]:
+              - button "Solid" [ref=e80] [cursor=pointer]
+              - button "Gradient" [ref=e81] [cursor=pointer]
+              - button "Pattern" [ref=e82] [cursor=pointer]
+          - generic [ref=e83]:
+            - button "New" [ref=e84] [cursor=pointer]:
+              - img [ref=e85]
+              - generic [ref=e86]: New
+            - button "Save" [ref=e87] [cursor=pointer]:
+              - img [ref=e88]
+              - generic [ref=e92]: Save
+            - button "Copy" [ref=e94] [cursor=pointer]:
+              - img [ref=e95]
+              - generic [ref=e98]: Copy
+            - button "PNG" [ref=e99] [cursor=pointer]:
+              - img [ref=e100]
+              - generic [ref=e103]: PNG
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - text: Font
+              - generic [ref=e107]: 14px
+            - slider [ref=e108] [cursor=pointer]: "14"
+          - generic [ref=e109]:
+            - generic [ref=e110]:
+              - text: Padding
+              - generic [ref=e111]: 32px
+            - slider [ref=e112] [cursor=pointer]: "32"
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - text: Width
+              - generic [ref=e115]: 720px
+            - slider [ref=e116] [cursor=pointer]: "720"
+      - main [ref=e117]:
+        - generic [ref=e118]:
+          - generic [ref=e119]: Editor
+          - generic [ref=e121]:
+            - generic [ref=e122]:
+              - generic [ref=e123]: tsx
+              - generic [ref=e124]: 40 lines
+            - textbox "Paste your code here..." [ref=e125]: "import React, { useState, useEffect } from 'react'; interface User { id: number; name: string; email: string; } const UserCard: React.FC<{ userId: number }> = ({ userId }) => { const [user, setUser] = useState<User | null>(null); const [loading, setLoading] = useState(true); useEffect(() => { const fetchUser = async () => { try { const res = await fetch(`/api/users/${userId}`); const data: User = await res.json(); setUser(data); } catch (err) { console.error('Failed to fetch user:', err); } finally { setLoading(false); } }; fetchUser(); }, [userId]); if (loading) return <div className=\"skeleton\" />; if (!user) return <div className=\"error\">User not found</div>; return ( <div className=\"user-card\"> <h2>{user.name}</h2> <p>{user.email}</p> </div> ); }; export default UserCard;"
+        - generic [ref=e126]:
+          - generic [ref=e127]: Preview
+          - generic [ref=e131]:
+            - generic [ref=e132]:
+              - generic [ref=e138]:
+                - generic [ref=e139]: ⚛
+                - generic [ref=e140]: UserCard.tsx
+              - generic [ref=e141]: TSX
+            - code [ref=e144]:
+              - generic [ref=e145]:
+                - generic [ref=e146]: "1"
+                - text: "import React, { useState, useEffect } from 'react';"
+              - generic [ref=e148]: "2"
+              - generic [ref=e149]:
+                - generic [ref=e150]: "3"
+                - text: "interface User {"
+              - generic [ref=e151]:
+                - generic [ref=e152]: "4"
+                - text: "id: number;"
+              - generic [ref=e153]:
+                - generic [ref=e154]: "5"
+                - text: "name: string;"
+              - generic [ref=e155]:
+                - generic [ref=e156]: "6"
+                - text: "email: string;"
+              - generic [ref=e157]:
+                - generic [ref=e158]: "7"
+                - text: "}"
+              - generic [ref=e160]: "8"
+              - generic [ref=e161]:
+                - generic [ref=e162]: "9"
+                - text: "const UserCard: React.FC<{ userId: number }> = ({ userId }) => {"
+              - generic [ref=e163]:
+                - generic [ref=e164]: "10"
+                - text: const [user, setUser] = useState<User | null>(null);
+              - generic [ref=e165]:
+                - generic [ref=e166]: "11"
+                - text: const [loading, setLoading] = useState(true);
+              - generic [ref=e168]: "12"
+              - generic [ref=e169]:
+                - generic [ref=e170]: "13"
+                - text: "useEffect(() => {"
+              - generic [ref=e171]:
+                - generic [ref=e172]: "14"
+                - text: "const fetchUser = async () => {"
+              - generic [ref=e173]:
+                - generic [ref=e174]: "15"
+                - text: "try {"
+              - generic [ref=e175]:
+                - generic [ref=e176]: "16"
+                - text: "const res = await fetch(`/api/users/${userId}`);"
+              - generic [ref=e177]:
+                - generic [ref=e178]: "17"
+                - text: "const data: User = await res.json();"
+              - generic [ref=e179]:
+                - generic [ref=e180]: "18"
+                - text: setUser(data);
+              - generic [ref=e181]:
+                - generic [ref=e182]: "19"
+                - text: "} catch (err) {"
+              - generic [ref=e183]:
+                - generic [ref=e184]: "20"
+                - text: console.error('Failed to fetch user:', err);
+              - generic [ref=e185]:
+                - generic [ref=e186]: "21"
+                - text: "} finally {"
+              - generic [ref=e187]:
+                - generic [ref=e188]: "22"
+                - text: setLoading(false);
+              - generic [ref=e189]:
+                - generic [ref=e190]: "23"
+                - text: "}"
+              - generic [ref=e191]:
+                - generic [ref=e192]: "24"
+                - text: "};"
+              - generic [ref=e194]: "25"
+              - generic [ref=e195]:
+                - generic [ref=e196]: "26"
+                - text: fetchUser();
+              - generic [ref=e197]:
+                - generic [ref=e198]: "27"
+                - text: "}, [userId]);"
+              - generic [ref=e200]: "28"
+              - generic [ref=e201]:
+                - generic [ref=e202]: "29"
+                - text: if (loading) return <div className="skeleton" />;
+              - generic [ref=e203]:
+                - generic [ref=e204]: "30"
+                - text: if (!user) return <div className="error">User not found</div>;
+              - generic [ref=e206]: "31"
+              - generic [ref=e207]:
+                - generic [ref=e208]: "32"
+                - text: return (
+              - generic [ref=e209]:
+                - generic [ref=e210]: "33"
+                - text: <div className="user-card">
+              - generic [ref=e211]:
+                - generic [ref=e212]: "34"
+                - text: "<h2>{user.name}</h2>"
+              - generic [ref=e213]:
+                - generic [ref=e214]: "35"
+                - text: "<p>{user.email}</p>"
+              - generic [ref=e215]:
+                - generic [ref=e216]: "36"
+                - text: </div>
+              - generic [ref=e217]:
+                - generic [ref=e218]: "37"
+                - text: );
+              - generic [ref=e219]:
+                - generic [ref=e220]: "38"
+                - text: "};"
+              - generic [ref=e222]: "39"
+              - generic [ref=e223]:
+                - generic [ref=e224]: "40"
+                - text: export default UserCard;

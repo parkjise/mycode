@@ -1,0 +1,197 @@
+/* ─── Stage (outer background wrapper) ──────────────────────── */
+.stage {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  min-width: min-content;
+}
+
+/* Dark solid */
+.bg-solid-dark {
+  background: #1a1a2e;
+}
+/* Light solid */
+.bg-solid-light {
+  background: #e8e8f0;
+}
+
+/* Dark gradient */
+.bg-gradient-dark {
+  background: radial-gradient(ellipse at 30% 20%, #1a1a3e 0%, #0d0d1a 50%, #0a0a12 100%);
+}
+/* Light gradient */
+.bg-gradient-light {
+  background: radial-gradient(ellipse at 30% 20%, #dde0ff 0%, #eef0ff 50%, #f5f5ff 100%);
+}
+
+/* Dark pattern */
+.bg-pattern-dark {
+  background-color: #0d0d1a;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(91,95,239,0.15) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+/* Light pattern */
+.bg-pattern-light {
+  background-color: #f0f0f8;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(91,95,239,0.2) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* ─── Card ───────────────────────────────────────────────────── */
+.card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  position: relative;
+}
+
+.cardDark {
+  background: #1e1e2e;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.cardLight {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+/* ─── Title bar ──────────────────────────────────────────────── */
+.titleBar {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 16px;
+  border-bottom: 1px solid transparent;
+  gap: 12px;
+}
+
+.titleBarDark {
+  background: #252535;
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+.titleBarLight {
+  background: #f3f3f8;
+  border-bottom-color: rgba(0,0,0,0.07);
+}
+
+/* Mac dots */
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotRed    { background: #ff5f57; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.2) inset; }
+.dotYellow { background: #ffbd2e; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.15) inset; }
+.dotGreen  { background: #28c840; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.15) inset; }
+
+/* Tab */
+.tabWrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 6px 6px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  max-width: 260px;
+  overflow: hidden;
+}
+
+.tabDark {
+  background: #1e1e2e;
+  color: #c8c8e8;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid #1e1e2e;
+}
+
+.tabLight {
+  background: #ffffff;
+  color: #333355;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-bottom: 1px solid #ffffff;
+}
+
+.tabIcon {
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tabName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Window right side */
+.windowActions {
+  flex-shrink: 0;
+}
+
+.langLabel {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: rgba(136, 136, 168, 0.6);
+  letter-spacing: 0.3px;
+}
+
+/* ─── Code body ──────────────────────────────────────────────── */
+.codeBody {
+  position: relative;
+  overflow: auto;
+  max-height: 70vh;
+}
+
+/* ─── Placeholder ────────────────────────────────────────────── */
+.placeholderOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.placeholderContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(136, 136, 168, 0.5);
+  text-align: center;
+}
+
+.placeholderContent svg {
+  opacity: 0.4;
+}
+
+.placeholderContent p {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.placeholderContent span {
+  font-size: 11px;
+  opacity: 0.7;
+}

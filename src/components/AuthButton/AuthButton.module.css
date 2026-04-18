@@ -1,0 +1,121 @@
+.signInBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--bg-control);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.signInBtn:hover {
+  background: var(--bg-control-hover);
+  border-color: var(--text-muted);
+}
+
+/* ─── Logged in ──────────────────────────────────────────────── */
+.userArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.syncBadge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(91, 95, 239, 0.2);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+
+.spinner {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid rgba(91, 95, 239, 0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border-color);
+}
+
+.avatarFallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.signOutBtn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.signOutBtn:hover {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ─── Loading ────────────────────────────────────────────────── */
+.skeleton {
+  width: 100px;
+  height: 32px;
+  background: var(--bg-control);
+  border-radius: var(--radius-md);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}

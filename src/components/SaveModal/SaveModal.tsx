@@ -10,7 +10,7 @@ interface SaveModalProps {
   isUpdate: boolean;
   onConfirm: (name: string, categoryId: string) => void;
   onCancel: () => void;
-  onAddCategory: (name: string, color: string) => string;
+  onAddCategory: (name: string, color: string) => string | Promise<string>;
 }
 
 const CATEGORY_COLORS = [
@@ -53,9 +53,9 @@ export default function SaveModal({
     onConfirm(name.trim(), categoryId);
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCatName.trim()) return;
-    const id = onAddCategory(newCatName.trim(), newCatColor);
+    const id = await Promise.resolve(onAddCategory(newCatName.trim(), newCatColor));
     setCategoryId(id);
     setShowNewCat(false);
     setNewCatName('');

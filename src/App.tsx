@@ -7,12 +7,14 @@ import {
   CARD_WIDTH_DEFAULT,
 } from './constants';
 import { useSnippets } from './hooks/useSnippets';
+import { useAuth } from './hooks/useAuth';
 import { decodeSnippetFromUrl, clearUrlHash } from './utils/urlShare';
 import Toolbar from './components/Toolbar/Toolbar';
 import CodeInput from './components/CodeInput/CodeInput';
 import CodePreview from './components/CodePreview/CodePreview';
 import Sidebar from './components/Sidebar/Sidebar';
 import SaveModal from './components/SaveModal/SaveModal';
+import AuthButton from './components/AuthButton/AuthButton';
 import styles from './App.module.css';
 
 const freshState = (): AppState => {
@@ -41,10 +43,13 @@ export default function App() {
   const [savedFeedback, setSavedFeedback] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
+  const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
+
   const {
     categories,
     snippets,
     activeId,
+    syncing,
     setActiveId,
     saveSnippet,
     deleteSnippet,
@@ -54,7 +59,7 @@ export default function App() {
     deleteCategory,
     exportLibrary,
     importLibrary,
-  } = useSnippets();
+  } = useSnippets(user?.id ?? null);
 
   const update = <K extends keyof AppState>(key: K, value: AppState[K]) => {
     setState((prev) => ({ ...prev, [key]: value }));
@@ -189,6 +194,13 @@ export default function App() {
         </div>
 
         <div className={styles.headerRight}>
+          <AuthButton
+            user={user}
+            loading={authLoading}
+            syncing={syncing}
+            onSignIn={signInWithGoogle}
+            onSignOut={signOut}
+          />
           <button
             className={styles.themeBtn}
             onClick={() =>

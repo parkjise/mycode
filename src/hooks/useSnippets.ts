@@ -1,5 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Category, Snippet } from '../types';
+import {
+  supabase,
+  toDbSnippet,
+  fromDbSnippet,
+  toDbCategory,
+  fromDbCategory,
+} from '../lib/supabase';
 
 const SNIPPETS_KEY = 'snipshot:snippets';
 const CATEGORIES_KEY = 'snipshot:categories';
@@ -16,29 +23,63 @@ function load<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  } catch { return fallback; }
 }
 
 function persist<T>(key: string, value: T): void {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-export function useSnippets() {
+// ─── Hook ────────────────────────────────────────────────────
+
+export function useSnippets(userId: string | null) {
   const [categories, setCategories] = useState<Category[]>(() =>
     load<Category[]>(CATEGORIES_KEY, DEFAULT_CATEGORIES)
   );
-
   const [snippets, setSnippets] = useState<Snippet[]>(() =>
     load<Snippet[]>(SNIPPETS_KEY, [])
   );
-
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
-  // ─── CRUD ──────────────────────────────────────────────────
+  // ─── 로그인 시 클라우드에서 데이터 로드 ──────────────────────
+  useEffect(() => {
+    if (!userId || !supabase) return;
+    const db = supabase;
 
-  const saveSnippet = useCallback((snippet: Snippet) => {
+    const loadFromCloud = async () => {
+      setSyncing(true);
+      try {
+        const [{ data: dbSnippets }, { data: dbCategories }] = await Promise.all([
+          db.from('snippets').select('*').eq('user_id', userId).order('updated_at', { ascending: false }),
+          db.from('categories').select('*').eq('user_id', userId),
+        ]);
+
+        if (dbSnippets && dbSnippets.length > 0) {
+          const loaded = dbSnippets.map(fromDbSnippet);
+          setSnippets(loaded);
+          persist(SNIPPETS_KEY, loaded);
+        }
+
+        if (dbCategories && dbCategories.length > 0) {
+          const loaded = dbCategories.map(fromDbCategory);
+          setCategories(loaded);
+          persist(CATEGORIES_KEY, loaded);
+        }
+      } catch (err) {
+        console.error('Cloud sync failed, using local data:', err);
+      } finally {
+        setSyncing(false);
+      }
+    };
+
+    loadFromCloud();
+  }, [userId]);
+
+  // ─── CRUD (로컬 + 클라우드 동기화) ───────────────────────────
+
+  const saveSnippet = useCallback(async (snippet: Snippet) => {
+    // 1. 로컬 즉시 반영
     setSnippets((prev) => {
       const exists = prev.some((s) => s.id === snippet.id);
       const next = exists
@@ -48,18 +89,29 @@ export function useSnippets() {
       return next;
     });
     setActiveId(snippet.id);
-  }, []);
 
-  const deleteSnippet = useCallback((id: string) => {
+    // 2. 클라우드 동기화
+    if (userId && supabase) {
+      await supabase
+        .from('snippets')
+        .upsert(toDbSnippet(snippet, userId));
+    }
+  }, [userId]);
+
+  const deleteSnippet = useCallback(async (id: string) => {
     setSnippets((prev) => {
       const next = prev.filter((s) => s.id !== id);
       persist(SNIPPETS_KEY, next);
       return next;
     });
     setActiveId((prev) => (prev === id ? null : prev));
-  }, []);
 
-  const renameSnippet = useCallback((id: string, name: string) => {
+    if (userId && supabase) {
+      await supabase.from('snippets').delete().eq('id', id).eq('user_id', userId);
+    }
+  }, [userId]);
+
+  const renameSnippet = useCallback(async (id: string, name: string) => {
     setSnippets((prev) => {
       const next = prev.map((s) =>
         s.id === id ? { ...s, name, updatedAt: Date.now() } : s
@@ -67,9 +119,17 @@ export function useSnippets() {
       persist(SNIPPETS_KEY, next);
       return next;
     });
-  }, []);
 
-  const moveSnippet = useCallback((id: string, categoryId: string) => {
+    if (userId && supabase) {
+      await supabase
+        .from('snippets')
+        .update({ name, updated_at: Date.now() })
+        .eq('id', id)
+        .eq('user_id', userId);
+    }
+  }, [userId]);
+
+  const moveSnippet = useCallback(async (id: string, categoryId: string) => {
     setSnippets((prev) => {
       const next = prev.map((s) =>
         s.id === id ? { ...s, categoryId, updatedAt: Date.now() } : s
@@ -77,30 +137,49 @@ export function useSnippets() {
       persist(SNIPPETS_KEY, next);
       return next;
     });
-  }, []);
 
-  // ─── Categories ─────────────────────────────────────────────
+    if (userId && supabase) {
+      await supabase
+        .from('snippets')
+        .update({ category_id: categoryId, updated_at: Date.now() })
+        .eq('id', id)
+        .eq('user_id', userId);
+    }
+  }, [userId]);
 
-  const addCategory = useCallback((name: string, color: string) => {
+  // ─── Categories ──────────────────────────────────────────────
+
+  const addCategory = useCallback(async (name: string, color: string) => {
     const newCat: Category = { id: `cat-${Date.now()}`, name, color };
     setCategories((prev) => {
       const next = [...prev, newCat];
       persist(CATEGORIES_KEY, next);
       return next;
     });
-    return newCat.id;
-  }, []);
 
-  const renameCategory = useCallback((id: string, name: string) => {
+    if (userId && supabase) {
+      await supabase.from('categories').insert(toDbCategory(newCat, userId));
+    }
+    return newCat.id;
+  }, [userId]);
+
+  const renameCategory = useCallback(async (id: string, name: string) => {
     setCategories((prev) => {
       const next = prev.map((c) => (c.id === id ? { ...c, name } : c));
       persist(CATEGORIES_KEY, next);
       return next;
     });
-  }, []);
 
-  const deleteCategory = useCallback((id: string) => {
-    // Move orphaned snippets to 'general'
+    if (userId && supabase) {
+      await supabase
+        .from('categories')
+        .update({ name })
+        .eq('id', id)
+        .eq('user_id', userId);
+    }
+  }, [userId]);
+
+  const deleteCategory = useCallback(async (id: string) => {
     setSnippets((prev) => {
       const next = prev.map((s) =>
         s.categoryId === id ? { ...s, categoryId: 'general' } : s
@@ -113,9 +192,22 @@ export function useSnippets() {
       persist(CATEGORIES_KEY, next);
       return next;
     });
-  }, []);
 
-  // ─── Export / Import ────────────────────────────────────────
+    if (userId && supabase) {
+      await supabase
+        .from('snippets')
+        .update({ category_id: 'general' })
+        .eq('category_id', id)
+        .eq('user_id', userId);
+      await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+    }
+  }, [userId]);
+
+  // ─── Export / Import ─────────────────────────────────────────
 
   const exportLibrary = useCallback(() => {
     const data = JSON.stringify({ categories, snippets }, null, 2);
@@ -131,7 +223,7 @@ export function useSnippets() {
   const importLibrary = useCallback(
     (file: File, mode: 'replace' | 'merge') => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const parsed = JSON.parse(e.target?.result as string) as {
             categories: Category[];
@@ -144,36 +236,51 @@ export function useSnippets() {
             setSnippets(parsed.snippets);
             persist(CATEGORIES_KEY, parsed.categories);
             persist(SNIPPETS_KEY, parsed.snippets);
+
+            if (userId && supabase) {
+              await supabase.from('snippets').delete().eq('user_id', userId);
+              await supabase.from('categories').delete().eq('user_id', userId);
+              await supabase.from('categories').insert(parsed.categories.map((c) => toDbCategory(c, userId)));
+              await supabase.from('snippets').insert(parsed.snippets.map((s) => toDbSnippet(s, userId)));
+            }
           } else {
-            // merge: 기존 id와 중복되지 않는 항목만 추가
             setCategories((prev) => {
-              const existingIds = new Set(prev.map((c) => c.id));
-              const newCats = parsed.categories.filter((c) => !existingIds.has(c.id));
-              const next = [...prev, ...newCats];
+              const ids = new Set(prev.map((c) => c.id));
+              const next = [...prev, ...parsed.categories.filter((c) => !ids.has(c.id))];
               persist(CATEGORIES_KEY, next);
               return next;
             });
             setSnippets((prev) => {
-              const existingIds = new Set(prev.map((s) => s.id));
-              const newSnips = parsed.snippets.filter((s) => !existingIds.has(s.id));
-              const next = [...newSnips, ...prev];
+              const ids = new Set(prev.map((s) => s.id));
+              const newOnes = parsed.snippets.filter((s) => !ids.has(s.id));
+              const next = [...newOnes, ...prev];
               persist(SNIPPETS_KEY, next);
               return next;
             });
+
+            if (userId && supabase) {
+              const existCatIds = new Set(categories.map((c) => c.id));
+              const existSnipIds = new Set(snippets.map((s) => s.id));
+              const newCats = parsed.categories.filter((c) => !existCatIds.has(c.id));
+              const newSnips = parsed.snippets.filter((s) => !existSnipIds.has(s.id));
+              if (newCats.length) await supabase.from('categories').insert(newCats.map((c) => toDbCategory(c, userId)));
+              if (newSnips.length) await supabase.from('snippets').insert(newSnips.map((s) => toDbSnippet(s, userId)));
+            }
           }
         } catch {
-          alert('Invalid file format. Please use a SnipShot export file.');
+          alert('Invalid file format.');
         }
       };
       reader.readAsText(file);
     },
-    []
+    [userId, categories, snippets]
   );
 
   return {
     categories,
     snippets,
     activeId,
+    syncing,
     setActiveId,
     saveSnippet,
     deleteSnippet,

@@ -1,15 +1,31 @@
-.signInBtn {
+.guestArea {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.guestHint {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .guestHint { display: none; }
+}
+
+.signInBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   height: 32px;
-  padding: 0 14px;
+  padding: 0 12px;
   background: var(--bg-control);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition);

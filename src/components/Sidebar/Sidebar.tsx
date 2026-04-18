@@ -239,8 +239,27 @@ export default function Sidebar({
                             />
                           ) : (
                             <>
-                              <div className={styles.snippetName}>
-                                {snippet.name}
+                              <div className={styles.snippetTop}>
+                                <div className={styles.snippetName}>
+                                  {snippet.name}
+                                </div>
+                                <button
+                                  className={styles.deleteBtn}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`"${snippet.name}" 을 삭제할까요?`)) {
+                                      onDelete(snippet.id);
+                                    }
+                                  }}
+                                  title="삭제"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6l-1 14H6L5 6" />
+                                    <path d="M10 11v6M14 11v6" />
+                                    <path d="M9 6V4h6v2" />
+                                  </svg>
+                                </button>
                               </div>
                               <div className={styles.snippetMeta}>
                                 <span className={styles.langBadge}>

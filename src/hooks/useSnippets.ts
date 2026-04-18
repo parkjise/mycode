@@ -42,17 +42,26 @@ export function useSnippets(userId: string | null) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  // ─── 로그인 시 클라우드에서 데이터 로드 ──────────────────────
+  // ─── 앱 시작 시 클라우드 데이터 로드 (로그인 여부 무관) ──────
   useEffect(() => {
-    if (!userId || !supabase) return;
+    if (!supabase) return;
     const db = supabase;
 
     const loadFromCloud = async () => {
       setSyncing(true);
       try {
+        // 로그인 상태: 내 스니펫만 / 비로그인: 전체 공개 스니펫
+        const snippetQuery = userId
+          ? db.from('snippets').select('*').eq('user_id', userId).order('updated_at', { ascending: false })
+          : db.from('snippets').select('*').order('updated_at', { ascending: false });
+
+        const categoryQuery = userId
+          ? db.from('categories').select('*').eq('user_id', userId)
+          : db.from('categories').select('*');
+
         const [{ data: dbSnippets }, { data: dbCategories }] = await Promise.all([
-          db.from('snippets').select('*').eq('user_id', userId).order('updated_at', { ascending: false }),
-          db.from('categories').select('*').eq('user_id', userId),
+          snippetQuery,
+          categoryQuery,
         ]);
 
         if (dbSnippets && dbSnippets.length > 0) {

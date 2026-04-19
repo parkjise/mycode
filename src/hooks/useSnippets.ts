@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Category, Snippet } from '../types';
 import {
   supabase,
@@ -32,7 +32,7 @@ function persist<T>(key: string, value: T): void {
 
 // ─── Hook ────────────────────────────────────────────────────
 
-export function useSnippets(userId: string | null) {
+export function useSnippets(userId: string | null, authReady: boolean) {
   const [categories, setCategories] = useState<Category[]>(() =>
     load<Category[]>(CATEGORIES_KEY, DEFAULT_CATEGORIES)
   );
@@ -42,53 +42,89 @@ export function useSnippets(userId: string | null) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  // ─── 앱 시작 시 클라우드 데이터 로드 (로그인 여부 무관) ──────
-  useEffect(() => {
+  // ref로 최신 userId를 항상 참조 (클로저 문제 방지)
+  const userIdRef = useRef(userId);
+  useEffect(() => { userIdRef.current = userId; }, [userId]);
+
+  // ─── 클라우드에서 전체 데이터 로드 ────────────────────────────
+  const loadFromCloud = useCallback(async () => {
     if (!supabase) return;
     const db = supabase;
+    const uid = userIdRef.current;
 
-    const loadFromCloud = async () => {
-      setSyncing(true);
-      try {
-        // 로그인 상태: 내 스니펫만 / 비로그인: 전체 공개 스니펫
-        const snippetQuery = userId
-          ? db.from('snippets').select('*').eq('user_id', userId).order('updated_at', { ascending: false })
-          : db.from('snippets').select('*').order('updated_at', { ascending: false });
+    setSyncing(true);
+    try {
+      const snippetQuery = uid
+        ? db.from('snippets').select('*').eq('user_id', uid).order('updated_at', { ascending: false })
+        : db.from('snippets').select('*').order('updated_at', { ascending: false });
 
-        const categoryQuery = userId
-          ? db.from('categories').select('*').eq('user_id', userId)
-          : db.from('categories').select('*');
+      const categoryQuery = uid
+        ? db.from('categories').select('*').eq('user_id', uid)
+        : db.from('categories').select('*');
 
-        const [{ data: dbSnippets }, { data: dbCategories }] = await Promise.all([
-          snippetQuery,
-          categoryQuery,
-        ]);
+      const [{ data: dbSnippets, error: sErr }, { data: dbCategories, error: cErr }] = await Promise.all([
+        snippetQuery,
+        categoryQuery,
+      ]);
 
-        if (dbSnippets && dbSnippets.length > 0) {
-          const loaded = dbSnippets.map(fromDbSnippet);
-          setSnippets(loaded);
-          persist(SNIPPETS_KEY, loaded);
-        }
+      if (sErr) console.error('snippets fetch error:', sErr);
+      if (cErr) console.error('categories fetch error:', cErr);
 
-        if (dbCategories && dbCategories.length > 0) {
-          const loaded = dbCategories.map(fromDbCategory);
-          setCategories(loaded);
-          persist(CATEGORIES_KEY, loaded);
-        }
-      } catch (err) {
-        console.error('Cloud sync failed, using local data:', err);
-      } finally {
-        setSyncing(false);
+      // null 체크만 (빈 배열도 정상 — 삭제 후 빈 상태 반영)
+      if (dbSnippets !== null) {
+        const loaded = dbSnippets.map(fromDbSnippet);
+        setSnippets(loaded);
+        persist(SNIPPETS_KEY, loaded);
       }
-    };
 
+      if (dbCategories && dbCategories.length > 0) {
+        const loaded = dbCategories.map(fromDbCategory);
+        setCategories(loaded);
+        persist(CATEGORIES_KEY, loaded);
+      }
+    } catch (err) {
+      console.error('Cloud sync failed, using local data:', err);
+    } finally {
+      setSyncing(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── 초기 로드 + 실시간 구독 ──────────────────────────────────
+  useEffect(() => {
+    if (!supabase || !authReady) return;
+    const db = supabase;
+
+    // 최초 로드
     loadFromCloud();
-  }, [userId]);
 
-  // ─── CRUD (로컬 + 클라우드 동기화) ───────────────────────────
+    // Realtime 구독: snippets / categories 변경 시 자동 재로드
+    const channel = db
+      .channel(`realtime-sync-${userId ?? 'guest'}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'snippets' },
+        () => { loadFromCloud(); }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        () => { loadFromCloud(); }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime connected');
+        }
+      });
+
+    return () => {
+      db.removeChannel(channel);
+    };
+  }, [userId, authReady, loadFromCloud]);
+
+  // ─── CRUD (로컬 즉시 반영 + 클라우드 저장) ───────────────────
 
   const saveSnippet = useCallback(async (snippet: Snippet) => {
-    // 1. 로컬 즉시 반영
+    // 로컬 즉시 반영
     setSnippets((prev) => {
       const exists = prev.some((s) => s.id === snippet.id);
       const next = exists
@@ -99,7 +135,7 @@ export function useSnippets(userId: string | null) {
     });
     setActiveId(snippet.id);
 
-    // 2. 클라우드 동기화
+    // 클라우드 저장 (realtime이 다른 기기에 자동 전파)
     if (userId && supabase) {
       await supabase
         .from('snippets')

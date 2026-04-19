@@ -59,7 +59,7 @@ export default function App() {
     deleteCategory,
     exportLibrary,
     importLibrary,
-  } = useSnippets(user?.id ?? null);
+  } = useSnippets(user?.id ?? null, !authLoading);
 
   const update = <K extends keyof AppState>(key: K, value: AppState[K]) => {
     setState((prev) => ({ ...prev, [key]: value }));

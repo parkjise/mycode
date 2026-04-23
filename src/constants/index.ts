@@ -13,46 +13,7 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { key: 'bash', label: 'Bash / Shell', syntaxLang: 'bash' },
 ];
 
-export const DEFAULT_CODE = `import React, { useState, useEffect } from 'react';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-const UserCard: React.FC<{ userId: number }> = ({ userId }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(\`/api/users/\${userId}\`);
-        const data: User = await res.json();
-        setUser(data);
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [userId]);
-
-  if (loading) return <div className="skeleton" />;
-  if (!user) return <div className="error">User not found</div>;
-
-  return (
-    <div className="user-card">
-      <h2>{user.name}</h2>
-      <p>{user.email}</p>
-    </div>
-  );
-};
-
-export default UserCard;`;
+export const DEFAULT_CODE = '';
 
 export const FONT_SIZE_MIN = 11;
 export const FONT_SIZE_MAX = 20;

@@ -223,6 +223,25 @@
   justify-content: center;
 }
 
+/* ─── Editor toggle button ───────────────────────────────────── */
+.editorToggle {
+  /* 모바일에서는 숨김 (탭으로 대체) */
+}
+
+/* ─── Editor collapsed (desktop) ────────────────────────────── */
+.editorClosed .inputPanel {
+  display: none;
+}
+
+.editorClosed {
+  grid-template-columns: 1fr;
+}
+
+/* ─── Mobile tabs ────────────────────────────────────────────── */
+.mobileTabs {
+  display: none;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .brandTag {
@@ -235,14 +254,52 @@
     flex-direction: column;
   }
 
+  /* 데스크톱 에디터 토글 버튼 숨김 */
+  .editorToggle {
+    display: none;
+  }
+
+  /* 모바일 탭 표시 */
+  .mobileTabs {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-toolbar);
+  }
+
+  .mobileTab {
+    flex: 1;
+    height: 38px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .mobileTabActive {
+    color: var(--text-accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* 모바일에서 탭에 따라 패널 숨김/표시 */
+  .mobileHidden {
+    display: none !important;
+  }
+
   .main {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 1fr;
   }
 
   .inputPanel {
     border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: none;
   }
 
   .previewScroll {

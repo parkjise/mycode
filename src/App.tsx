@@ -27,7 +27,7 @@ const freshState = (): AppState => {
   return {
     code: DEFAULT_CODE,
     language: 'tsx',
-    fileName: 'UserCard.tsx',
+    fileName: '',
     theme: 'dark',
     fontSize: FONT_SIZE_DEFAULT,
     padding: PADDING_DEFAULT,
@@ -39,6 +39,8 @@ const freshState = (): AppState => {
 export default function App() {
   const [state, setState] = useState<AppState>(freshState);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [editorOpen, setEditorOpen] = useState(true);
+  const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('preview');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -174,6 +176,17 @@ export default function App() {
               <line x1="9" y1="3" x2="9" y2="21" />
             </svg>
           </button>
+          <button
+            className={`${styles.sidebarToggle} ${styles.editorToggle}`}
+            onClick={() => setEditorOpen((v) => !v)}
+            aria-label="Toggle editor"
+            title={editorOpen ? '에디터 닫기' : '에디터 열기'}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg>
+          </button>
           <div className={styles.brand}>
             <span className={styles.brandIcon}>&#x276F;</span>
             <span className={styles.brandName}>SnipShot</span>
@@ -256,8 +269,24 @@ export default function App() {
             appState={state}
           />
 
-          <main className={styles.main}>
-            <section className={styles.inputPanel}>
+          {/* 모바일 탭 */}
+          <div className={styles.mobileTabs}>
+            <button
+              className={`${styles.mobileTab} ${mobileTab === 'editor' ? styles.mobileTabActive : ''}`}
+              onClick={() => setMobileTab('editor')}
+            >
+              Editor
+            </button>
+            <button
+              className={`${styles.mobileTab} ${mobileTab === 'preview' ? styles.mobileTabActive : ''}`}
+              onClick={() => setMobileTab('preview')}
+            >
+              Preview
+            </button>
+          </div>
+
+          <main className={`${styles.main} ${!editorOpen ? styles.editorClosed : ''}`}>
+            <section className={`${styles.inputPanel} ${mobileTab !== 'editor' ? styles.mobileHidden : ''}`}>
               <div className={styles.panelLabel}>
                 <span className={styles.dot} />
                 Editor
@@ -269,7 +298,7 @@ export default function App() {
               />
             </section>
 
-            <section className={styles.previewPanel}>
+            <section className={`${styles.previewPanel} ${mobileTab !== 'preview' ? styles.mobileHidden : ''}`}>
               <div className={styles.panelLabel}>
                 <span className={styles.dot} style={{ background: 'var(--accent)' }} />
                 Preview

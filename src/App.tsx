@@ -70,11 +70,18 @@ export default function App() {
 
   const {
     notes,
+    noteCategories,
     activeNoteId,
     setActiveNoteId,
     saveNote,
     deleteNote,
     createNote,
+    addNoteCategory,
+    renameNoteCategory,
+    deleteNoteCategory,
+    changeNoteCategoryColor,
+    moveNoteCategoryUp,
+    moveNoteCategoryDown,
   } = useNotes(user?.id ?? null, !authLoading);
 
   const update = <K extends keyof AppState>(key: K, value: AppState[K]) => {
@@ -260,23 +267,30 @@ export default function App() {
         <Sidebar
           categories={categories}
           snippets={snippets}
-          notes={notes}
-          activeId={activeId}
-          activeNoteId={activeNoteId}
-          sidebarTab={sidebarTab}
-          onSidebarTabChange={setSidebarTab}
-          onSelect={loadSnippet}
-          onDelete={deleteSnippet}
-          onRename={renameSnippet}
-          onSelectNote={handleSelectNote}
-          onDeleteNote={deleteNote}
-          onNewNote={handleNewNote}
+          onAddCategory={addCategory}
           onDeleteCategory={deleteCategory}
           onRenameCategory={renameCategory}
           onChangeCategoryColor={changeCategoryColor}
           onMoveCategoryUp={moveCategoryUp}
           onMoveCategoryDown={moveCategoryDown}
-          onAddCategory={addCategory}
+          onSelect={loadSnippet}
+          onDelete={deleteSnippet}
+          onRename={renameSnippet}
+          noteCategories={noteCategories}
+          notes={notes}
+          onAddNoteCategory={addNoteCategory}
+          onDeleteNoteCategory={deleteNoteCategory}
+          onRenameNoteCategory={renameNoteCategory}
+          onChangeNoteCategoryColor={changeNoteCategoryColor}
+          onMoveNoteCategoryUp={moveNoteCategoryUp}
+          onMoveNoteCategoryDown={moveNoteCategoryDown}
+          onSelectNote={handleSelectNote}
+          onDeleteNote={deleteNote}
+          onNewNote={handleNewNote}
+          activeId={activeId}
+          activeNoteId={activeNoteId}
+          sidebarTab={sidebarTab}
+          onSidebarTabChange={setSidebarTab}
           isCollapsed={!sidebarOpen}
           onExport={exportLibrary}
           onImport={importLibrary}
@@ -286,7 +300,7 @@ export default function App() {
           {isNoteMode && activeNote ? (
             <NoteEditor
               note={activeNote}
-              categories={categories}
+              categories={noteCategories}
               onSave={saveNote}
               onDelete={(id) => { deleteNote(id); }}
               theme={state.theme}

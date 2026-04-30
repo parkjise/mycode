@@ -36,25 +36,35 @@ function buildTree(categories: Category[]): CategoryNode[] {
 }
 
 interface SidebarProps {
+  // Code tab
   categories: Category[];
   snippets: Snippet[];
-  notes: Note[];
-  activeId: string | null;
-  activeNoteId: string | null;
-  sidebarTab: 'code' | 'notes';
-  onSidebarTabChange: (tab: 'code' | 'notes') => void;
-  onSelect: (snippet: Snippet) => void;
-  onDelete: (id: string) => void;
-  onRename: (id: string, name: string) => void;
-  onSelectNote: (note: Note) => void;
-  onDeleteNote: (id: string) => void;
-  onNewNote: (categoryId: string) => void;
+  onAddCategory: (name: string, color: string, parentId?: string) => void;
   onDeleteCategory: (id: string) => void;
   onRenameCategory: (id: string, name: string) => void;
   onChangeCategoryColor: (id: string, color: string) => void;
   onMoveCategoryUp: (id: string) => void;
   onMoveCategoryDown: (id: string) => void;
-  onAddCategory: (name: string, color: string, parentId?: string) => void;
+  onSelect: (snippet: Snippet) => void;
+  onDelete: (id: string) => void;
+  onRename: (id: string, name: string) => void;
+  // Notes tab
+  noteCategories: Category[];
+  notes: Note[];
+  onAddNoteCategory: (name: string, color: string, parentId?: string) => void;
+  onDeleteNoteCategory: (id: string) => void;
+  onRenameNoteCategory: (id: string, name: string) => void;
+  onChangeNoteCategoryColor: (id: string, color: string) => void;
+  onMoveNoteCategoryUp: (id: string) => void;
+  onMoveNoteCategoryDown: (id: string) => void;
+  onSelectNote: (note: Note) => void;
+  onDeleteNote: (id: string) => void;
+  onNewNote: (categoryId: string) => void;
+  // Shared
+  activeId: string | null;
+  activeNoteId: string | null;
+  sidebarTab: 'code' | 'notes';
+  onSidebarTabChange: (tab: 'code' | 'notes') => void;
   isCollapsed: boolean;
   onExport: () => void;
   onImport: (file: File, mode: 'replace' | 'merge') => void;
@@ -63,23 +73,30 @@ interface SidebarProps {
 export default function Sidebar({
   categories,
   snippets,
-  notes,
-  activeId,
-  activeNoteId,
-  sidebarTab,
-  onSidebarTabChange,
-  onSelect,
-  onDelete,
-  onRename,
-  onSelectNote,
-  onDeleteNote,
-  onNewNote,
+  onAddCategory,
   onDeleteCategory,
   onRenameCategory,
   onChangeCategoryColor,
   onMoveCategoryUp,
   onMoveCategoryDown,
-  onAddCategory,
+  onSelect,
+  onDelete,
+  onRename,
+  noteCategories,
+  notes,
+  onAddNoteCategory,
+  onDeleteNoteCategory,
+  onRenameNoteCategory,
+  onChangeNoteCategoryColor,
+  onMoveNoteCategoryUp,
+  onMoveNoteCategoryDown,
+  onSelectNote,
+  onDeleteNote,
+  onNewNote,
+  activeId,
+  activeNoteId,
+  sidebarTab,
+  onSidebarTabChange,
   isCollapsed,
   onExport,
   onImport,
@@ -88,35 +105,54 @@ export default function Sidebar({
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(
-    new Set(categories.map((c) => c.id))
+    new Set([...categories.map((c) => c.id), ...noteCategories.map((c) => c.id)])
   );
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Rename states
   const [renamingSnippet, setRenamingSnippet] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [renamingCat, setRenamingCat] = useState<string | null>(null);
   const [renameCatValue, setRenameCatValue] = useState('');
-
-  // Add subcategory
   const [addingSubcat, setAddingSubcat] = useState<string | null>(null);
   const [subcatName, setSubcatName] = useState('');
-
-  // Add top-level category
   const [showAddCat, setShowAddCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState(randomColor());
-
-  // Color picker for existing category (context menu)
   const [colorPickerCatId, setColorPickerCatId] = useState<string | null>(null);
-
-  // Context menu
   const [contextMenu, setContextMenu] = useState<{
     type: 'snippet' | 'category' | 'note';
     id: string;
     x: number;
     y: number;
   } | null>(null);
+
+  // Active set based on current tab
+  const activeCategories = sidebarTab === 'code' ? categories : noteCategories;
+
+  const handleAddCategory = (name: string, color: string, parentId?: string) => {
+    if (sidebarTab === 'code') onAddCategory(name, color, parentId);
+    else onAddNoteCategory(name, color, parentId);
+  };
+  const handleDeleteCategory = (id: string) => {
+    if (sidebarTab === 'code') onDeleteCategory(id);
+    else onDeleteNoteCategory(id);
+  };
+  const handleRenameCategory = (id: string, name: string) => {
+    if (sidebarTab === 'code') onRenameCategory(id, name);
+    else onRenameNoteCategory(id, name);
+  };
+  const handleChangeCategoryColor = (id: string, color: string) => {
+    if (sidebarTab === 'code') onChangeCategoryColor(id, color);
+    else onChangeNoteCategoryColor(id, color);
+  };
+  const handleMoveCategoryUp = (id: string) => {
+    if (sidebarTab === 'code') onMoveCategoryUp(id);
+    else onMoveNoteCategoryUp(id);
+  };
+  const handleMoveCategoryDown = (id: string) => {
+    if (sidebarTab === 'code') onMoveCategoryDown(id);
+    else onMoveNoteCategoryDown(id);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -182,7 +218,7 @@ export default function Sidebar({
   };
 
   const submitRenameCat = (id: string) => {
-    if (renameCatValue.trim()) onRenameCategory(id, renameCatValue.trim());
+    if (renameCatValue.trim()) handleRenameCategory(id, renameCatValue.trim());
     setRenamingCat(null);
   };
 
@@ -195,7 +231,7 @@ export default function Sidebar({
 
   const submitAddSubcat = () => {
     if (subcatName.trim() && addingSubcat) {
-      onAddCategory(subcatName.trim(), randomColor(), addingSubcat);
+      handleAddCategory(subcatName.trim(), randomColor(), addingSubcat);
     }
     setAddingSubcat(null);
     setSubcatName('');
@@ -203,7 +239,7 @@ export default function Sidebar({
 
   const submitAddCat = () => {
     if (newCatName.trim()) {
-      onAddCategory(newCatName.trim(), newCatColor);
+      handleAddCategory(newCatName.trim(), newCatColor);
     }
     setShowAddCat(false);
     setNewCatName('');
@@ -218,9 +254,8 @@ export default function Sidebar({
     return d.toLocaleDateString('ko', { month: 'short', day: 'numeric' });
   };
 
-  const tree = buildTree(categories);
+  const tree = buildTree(activeCategories);
 
-  // Color picker swatch component
   const ColorSwatches = ({ onPick }: { onPick: (c: string) => void }) => (
     <div className={styles.colorSwatches}>
       {CAT_COLORS.map((c) => (
@@ -295,10 +330,9 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Inline color picker (clicking the dot) */}
         {colorPickerCatId === node.id && (
           <div className={styles.inlineColorPicker} style={{ paddingLeft: 12 + indent }}>
-            <ColorSwatches onPick={(c) => { onChangeCategoryColor(node.id, c); setColorPickerCatId(null); }} />
+            <ColorSwatches onPick={(c) => { handleChangeCategoryColor(node.id, c); setColorPickerCatId(null); }} />
           </div>
         )}
 
@@ -432,7 +466,7 @@ export default function Sidebar({
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${sidebarTab === 'code' ? styles.tabActive : ''}`}
-            onClick={() => onSidebarTabChange('code')}
+            onClick={() => { onSidebarTabChange('code'); setShowAddCat(false); }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
@@ -441,7 +475,7 @@ export default function Sidebar({
           </button>
           <button
             className={`${styles.tab} ${sidebarTab === 'notes' ? styles.tabActive : ''}`}
-            onClick={() => onSidebarTabChange('notes')}
+            onClick={() => { onSidebarTabChange('notes'); setShowAddCat(false); }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
@@ -506,20 +540,12 @@ export default function Sidebar({
                 }}
                 autoFocus
               />
-              <button
-                className={styles.addCatConfirm}
-                onClick={submitAddCat}
-                title="추가"
-              >
+              <button className={styles.addCatConfirm} onClick={submitAddCat} title="추가">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </button>
-              <button
-                className={styles.addCatCancel}
-                onClick={() => setShowAddCat(false)}
-                title="취소"
-              >
+              <button className={styles.addCatCancel} onClick={() => setShowAddCat(false)} title="취소">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
@@ -616,7 +642,7 @@ export default function Sidebar({
             ) : (
               <>
                 <button className={styles.ctxItem} onClick={() => {
-                  const c = categories.find((x) => x.id === contextMenu.id);
+                  const c = activeCategories.find((x) => x.id === contextMenu.id);
                   if (c) startRenameCat(c.id, c.name);
                 }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -626,7 +652,6 @@ export default function Sidebar({
                   Rename
                 </button>
 
-                {/* Change Color (inline in context menu) */}
                 <div className={styles.ctxColorRow}>
                   <span className={styles.ctxColorLabel}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -639,10 +664,10 @@ export default function Sidebar({
                       <button
                         key={c}
                         className={`${styles.ctxColorSwatch} ${
-                          categories.find((cat) => cat.id === contextMenu.id)?.color === c ? styles.ctxColorSwatchActive : ''
+                          activeCategories.find((cat) => cat.id === contextMenu.id)?.color === c ? styles.ctxColorSwatchActive : ''
                         }`}
                         style={{ background: c }}
-                        onClick={() => { onChangeCategoryColor(contextMenu.id, c); closeContext(); }}
+                        onClick={() => { handleChangeCategoryColor(contextMenu.id, c); closeContext(); }}
                       />
                     ))}
                   </div>
@@ -656,20 +681,20 @@ export default function Sidebar({
                   Add Subcategory
                 </button>
                 <div className={styles.ctxSep} />
-                <button className={styles.ctxItem} onClick={() => { onMoveCategoryUp(contextMenu.id); closeContext(); }}>
+                <button className={styles.ctxItem} onClick={() => { handleMoveCategoryUp(contextMenu.id); closeContext(); }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="18 15 12 9 6 15"/>
                   </svg>
                   Move Up
                 </button>
-                <button className={styles.ctxItem} onClick={() => { onMoveCategoryDown(contextMenu.id); closeContext(); }}>
+                <button className={styles.ctxItem} onClick={() => { handleMoveCategoryDown(contextMenu.id); closeContext(); }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                   Move Down
                 </button>
                 <div className={styles.ctxSep} />
-                <button className={`${styles.ctxItem} ${styles.ctxDanger}`} onClick={() => { onDeleteCategory(contextMenu.id); closeContext(); }}>
+                <button className={`${styles.ctxItem} ${styles.ctxDanger}`} onClick={() => { handleDeleteCategory(contextMenu.id); closeContext(); }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
                   </svg>

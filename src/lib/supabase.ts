@@ -33,6 +33,7 @@ interface DbCategory {
   color: string;
   parent_id?: string;
   order: number;
+  type?: string;
 }
 
 interface DbNote {
@@ -83,8 +84,8 @@ export function fromDbSnippet(d: DbSnippet): Snippet {
   };
 }
 
-export function toDbCategory(c: Category, userId: string): DbCategory {
-  return { id: c.id, user_id: userId, name: c.name, color: c.color, parent_id: c.parentId, order: c.order ?? 0 };
+export function toDbCategory(c: Category, userId: string, type = 'code'): DbCategory {
+  return { id: c.id, user_id: userId, name: c.name, color: c.color, parent_id: c.parentId, order: c.order ?? 0, type };
 }
 
 export function fromDbCategory(d: DbCategory, idx = 0): Category {

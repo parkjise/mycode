@@ -58,7 +58,7 @@ export function useSnippets(userId: string | null, authReady: boolean) {
     try {
       const [{ data: dbSnippets, error: sErr }, { data: dbCategories, error: cErr }] = await Promise.all([
         db.from('snippets').select('*').eq('user_id', uid).order('updated_at', { ascending: false }),
-        db.from('categories').select('*').eq('user_id', uid),
+        db.from('categories').select('*').eq('user_id', uid).eq('type', 'code'),
       ]);
 
       if (sErr) console.error('snippets fetch error:', sErr);
@@ -84,7 +84,7 @@ export function useSnippets(userId: string | null, authReady: boolean) {
         // cloud empty → upload local categories (first-time login sync)
         const localCats = load<Category[]>(CATEGORIES_KEY, DEFAULT_CATEGORIES);
         if (localCats.length > 0) {
-          await Promise.all(localCats.map((c) => db.from('categories').upsert(toDbCategory(c, uid))));
+          await Promise.all(localCats.map((c) => db.from('categories').upsert(toDbCategory(c, uid, 'code'))));
         }
       }
     } catch (err) {
@@ -209,7 +209,7 @@ export function useSnippets(userId: string | null, authReady: boolean) {
     });
 
     if (userId && supabase) {
-      await supabase.from('categories').insert(toDbCategory(newCat, userId));
+      await supabase.from('categories').insert(toDbCategory(newCat, userId, 'code'));
     }
     return newCat.id;
   }, [userId, categories]);
@@ -343,7 +343,7 @@ export function useSnippets(userId: string | null, authReady: boolean) {
             if (userId && supabase) {
               await supabase.from('snippets').delete().eq('user_id', userId);
               await supabase.from('categories').delete().eq('user_id', userId);
-              await supabase.from('categories').insert(parsed.categories.map((c) => toDbCategory(c, userId)));
+              await supabase.from('categories').insert(parsed.categories.map((c) => toDbCategory(c, userId, 'code')));
               await supabase.from('snippets').insert(parsed.snippets.map((s) => toDbSnippet(s, userId)));
             }
           } else {
@@ -366,7 +366,7 @@ export function useSnippets(userId: string | null, authReady: boolean) {
               const existSnipIds = new Set(snippets.map((s) => s.id));
               const newCats = parsed.categories.filter((c) => !existCatIds.has(c.id));
               const newSnips = parsed.snippets.filter((s) => !existSnipIds.has(s.id));
-              if (newCats.length) await supabase.from('categories').insert(newCats.map((c) => toDbCategory(c, userId)));
+              if (newCats.length) await supabase.from('categories').insert(newCats.map((c) => toDbCategory(c, userId, 'code')));
               if (newSnips.length) await supabase.from('snippets').insert(newSnips.map((s) => toDbSnippet(s, userId)));
             }
           }

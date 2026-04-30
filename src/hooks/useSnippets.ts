@@ -12,11 +12,11 @@ const SNIPPETS_KEY = 'snipshot:snippets';
 const CATEGORIES_KEY = 'snipshot:categories';
 
 export const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'general',    name: 'General',      color: '#8888a8' },
-  { id: 'javascript', name: 'JavaScript',   color: '#f7df1e' },
-  { id: 'typescript', name: 'TypeScript',   color: '#3178c6' },
-  { id: 'react',      name: 'React',        color: '#61dafb' },
-  { id: 'css',        name: 'CSS / Styles', color: '#ff7262' },
+  { id: 'general',    name: 'General',      color: '#8888a8', order: 0 },
+  { id: 'javascript', name: 'JavaScript',   color: '#f7df1e', order: 1 },
+  { id: 'typescript', name: 'TypeScript',   color: '#3178c6', order: 2 },
+  { id: 'react',      name: 'React',        color: '#61dafb', order: 3 },
+  { id: 'css',        name: 'CSS / Styles', color: '#ff7262', order: 4 },
 ];
 
 function load<T>(key: string, fallback: T): T {
@@ -33,9 +33,10 @@ function persist<T>(key: string, value: T): void {
 // ─── Hook ────────────────────────────────────────────────────
 
 export function useSnippets(userId: string | null, authReady: boolean) {
-  const [categories, setCategories] = useState<Category[]>(() =>
-    load<Category[]>(CATEGORIES_KEY, DEFAULT_CATEGORIES)
-  );
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const loaded = load<Category[]>(CATEGORIES_KEY, DEFAULT_CATEGORIES);
+    return loaded.map((c, i) => ({ ...c, order: c.order ?? i }));
+  });
   const [snippets, setSnippets] = useState<Snippet[]>(() =>
     load<Snippet[]>(SNIPPETS_KEY, [])
   );
@@ -78,7 +79,7 @@ export function useSnippets(userId: string | null, authReady: boolean) {
       }
 
       if (dbCategories && dbCategories.length > 0) {
-        const loaded = dbCategories.map(fromDbCategory);
+        const loaded = dbCategories.map((d, i) => fromDbCategory(d, i));
         setCategories(loaded);
         persist(CATEGORIES_KEY, loaded);
       }
@@ -194,8 +195,9 @@ export function useSnippets(userId: string | null, authReady: boolean) {
 
   // ─── Categories ──────────────────────────────────────────────
 
-  const addCategory = useCallback(async (name: string, color: string) => {
-    const newCat: Category = { id: `cat-${Date.now()}`, name, color };
+  const addCategory = useCallback(async (name: string, color: string, parentId?: string) => {
+    const maxOrder = categories.reduce((max, c) => Math.max(max, c.order ?? 0), -1);
+    const newCat: Category = { id: `cat-${Date.now()}`, name, color, parentId, order: maxOrder + 1 };
     setCategories((prev) => {
       const next = [...prev, newCat];
       persist(CATEGORIES_KEY, next);
@@ -206,7 +208,55 @@ export function useSnippets(userId: string | null, authReady: boolean) {
       await supabase.from('categories').insert(toDbCategory(newCat, userId));
     }
     return newCat.id;
-  }, [userId]);
+  }, [userId, categories]);
+
+  const moveCategoryUp = useCallback(async (id: string) => {
+    const cat = categories.find((c) => c.id === id);
+    if (!cat) return;
+    const siblings = categories
+      .filter((c) => (c.parentId ?? null) === (cat.parentId ?? null))
+      .sort((a, b) => a.order - b.order);
+    const idx = siblings.findIndex((c) => c.id === id);
+    if (idx === 0) return;
+    const prev = siblings[idx - 1];
+    const newCats = categories.map((c) => {
+      if (c.id === id) return { ...c, order: prev.order };
+      if (c.id === prev.id) return { ...c, order: cat.order };
+      return c;
+    });
+    setCategories(newCats);
+    persist(CATEGORIES_KEY, newCats);
+    if (userId && supabase) {
+      await Promise.all([
+        supabase.from('categories').update({ order: prev.order }).eq('id', id).eq('user_id', userId),
+        supabase.from('categories').update({ order: cat.order }).eq('id', prev.id).eq('user_id', userId),
+      ]);
+    }
+  }, [categories, userId]);
+
+  const moveCategoryDown = useCallback(async (id: string) => {
+    const cat = categories.find((c) => c.id === id);
+    if (!cat) return;
+    const siblings = categories
+      .filter((c) => (c.parentId ?? null) === (cat.parentId ?? null))
+      .sort((a, b) => a.order - b.order);
+    const idx = siblings.findIndex((c) => c.id === id);
+    if (idx === siblings.length - 1) return;
+    const next = siblings[idx + 1];
+    const newCats = categories.map((c) => {
+      if (c.id === id) return { ...c, order: next.order };
+      if (c.id === next.id) return { ...c, order: cat.order };
+      return c;
+    });
+    setCategories(newCats);
+    persist(CATEGORIES_KEY, newCats);
+    if (userId && supabase) {
+      await Promise.all([
+        supabase.from('categories').update({ order: next.order }).eq('id', id).eq('user_id', userId),
+        supabase.from('categories').update({ order: cat.order }).eq('id', next.id).eq('user_id', userId),
+      ]);
+    }
+  }, [categories, userId]);
 
   const renameCategory = useCallback(async (id: string, name: string) => {
     setCategories((prev) => {
@@ -216,11 +266,19 @@ export function useSnippets(userId: string | null, authReady: boolean) {
     });
 
     if (userId && supabase) {
-      await supabase
-        .from('categories')
-        .update({ name })
-        .eq('id', id)
-        .eq('user_id', userId);
+      await supabase.from('categories').update({ name }).eq('id', id).eq('user_id', userId);
+    }
+  }, [userId]);
+
+  const changeCategoryColor = useCallback(async (id: string, color: string) => {
+    setCategories((prev) => {
+      const next = prev.map((c) => (c.id === id ? { ...c, color } : c));
+      persist(CATEGORIES_KEY, next);
+      return next;
+    });
+
+    if (userId && supabase) {
+      await supabase.from('categories').update({ color }).eq('id', id).eq('user_id', userId);
     }
   }, [userId]);
 
@@ -233,22 +291,18 @@ export function useSnippets(userId: string | null, authReady: boolean) {
       return next;
     });
     setCategories((prev) => {
-      const next = prev.filter((c) => c.id !== id);
+      // Also move subcategories to parent of deleted category (or root)
+      const deleted = prev.find((c) => c.id === id);
+      const next = prev
+        .filter((c) => c.id !== id)
+        .map((c) => c.parentId === id ? { ...c, parentId: deleted?.parentId } : c);
       persist(CATEGORIES_KEY, next);
       return next;
     });
 
     if (userId && supabase) {
-      await supabase
-        .from('snippets')
-        .update({ category_id: 'general' })
-        .eq('category_id', id)
-        .eq('user_id', userId);
-      await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+      await supabase.from('snippets').update({ category_id: 'general' }).eq('category_id', id).eq('user_id', userId);
+      await supabase.from('categories').delete().eq('id', id).eq('user_id', userId);
     }
   }, [userId]);
 
@@ -333,7 +387,10 @@ export function useSnippets(userId: string | null, authReady: boolean) {
     moveSnippet,
     addCategory,
     renameCategory,
+    changeCategoryColor,
     deleteCategory,
+    moveCategoryUp,
+    moveCategoryDown,
     exportLibrary,
     importLibrary,
   };

@@ -1,0 +1,441 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* ─── Note header ─────────────────────────────────────────────── */
+.noteHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px 10px;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-toolbar);
+}
+
+.noteMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.noteMeta2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.emojiWrap {
+  position: relative;
+}
+
+.emojiBtn {
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 6px;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+
+.emojiBtn:hover {
+  background: var(--bg-control-hover);
+}
+
+.emojiPicker {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 200px;
+  z-index: 100;
+  animation: fadeIn 100ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.emojiOption {
+  font-size: 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background var(--transition);
+}
+
+.emojiOption:hover {
+  background: var(--bg-control-hover);
+}
+
+.titleInput {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  letter-spacing: -0.3px;
+}
+
+.titleInput::placeholder {
+  color: var(--text-muted);
+}
+
+.categorySelect {
+  height: 28px;
+  padding: 0 8px;
+  background: var(--bg-control);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+
+.categorySelect:focus {
+  border-color: var(--border-focus);
+}
+
+.saveStatus {
+  font-size: 11px;
+  color: var(--success);
+  min-width: 36px;
+  text-align: right;
+  opacity: 0.8;
+}
+
+.deleteNoteBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.deleteNoteBtn:hover {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ─── Toolbar ─────────────────────────────────────────────────── */
+.toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-toolbar);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-wrap: wrap;
+}
+
+.toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.toolbarSep {
+  width: 1px;
+  height: 18px;
+  background: var(--border-color);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 5px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.toolbarBtn:hover {
+  background: var(--bg-control-hover);
+  color: var(--text-primary);
+}
+
+.toolbarBtnActive {
+  background: var(--accent-soft) !important;
+  border-color: rgba(91, 95, 239, 0.3) !important;
+  color: var(--text-accent) !important;
+}
+
+.toolbarRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.wordCount {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ─── Editor wrap ─────────────────────────────────────────────── */
+.editorWrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  padding-bottom: 80px;
+}
+
+.editorContent {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* ─── ProseMirror base ─────────────────────────────────────────── */
+.proseMirror {
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text-primary);
+  caret-color: var(--accent);
+}
+
+.proseMirror p {
+  margin: 0.4em 0;
+}
+
+.proseMirror p.is-editor-empty:first-child::before {
+  color: var(--text-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.proseMirror h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.2em 0 0.4em;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.proseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 1em 0 0.35em;
+  color: var(--text-primary);
+}
+
+.proseMirror h3 {
+  font-size: 1.17em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0.8em 0 0.3em;
+  color: var(--text-secondary);
+}
+
+.proseMirror strong { font-weight: 700; }
+.proseMirror em { font-style: italic; }
+.proseMirror u { text-decoration: underline; }
+.proseMirror s { text-decoration: line-through; opacity: 0.7; }
+
+.proseMirror mark {
+  background: rgba(255, 213, 0, 0.35);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+[data-theme="dark"] .proseMirror mark {
+  background: rgba(255, 200, 0, 0.25);
+}
+
+.proseMirror code {
+  background: var(--bg-control);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--text-accent);
+}
+
+.proseMirror pre {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin: 0.8em 0;
+  overflow-x: auto;
+}
+
+.proseMirror pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.9em;
+  color: var(--text-primary);
+}
+
+.proseMirror blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 0.8em 0;
+  padding: 6px 0 6px 18px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.proseMirror hr {
+  border: none;
+  border-top: 2px solid var(--border-color);
+  margin: 1.5em 0;
+}
+
+.proseMirror ul,
+.proseMirror ol {
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+
+.proseMirror li {
+  margin: 0.2em 0;
+}
+
+/* Task list */
+.proseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.proseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.proseMirror ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.proseMirror ul[data-type="taskList"] li > label input {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+.proseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.proseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Table */
+.proseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.proseMirror table td,
+.proseMirror table th {
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+  position: relative;
+  min-width: 80px;
+}
+
+.proseMirror table th {
+  background: var(--bg-panel);
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.proseMirror table tr:hover td {
+  background: var(--bg-control);
+}
+
+.proseMirror .selectedCell {
+  background: var(--accent-soft);
+}
+
+/* Selection */
+.proseMirror ::selection {
+  background: rgba(91, 95, 239, 0.2);
+}
+
+/* Gapcursor */
+.proseMirror .ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+
+.proseMirror.ProseMirror-focused .ProseMirror-gapcursor {
+  display: block;
+}

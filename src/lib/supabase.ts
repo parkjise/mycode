@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Category, Snippet } from '../types';
+import { Category, Note, Snippet } from '../types';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -31,6 +31,19 @@ interface DbCategory {
   user_id: string;
   name: string;
   color: string;
+  parent_id?: string;
+  order: number;
+}
+
+interface DbNote {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  category_id: string;
+  emoji: string;
+  created_at: number;
+  updated_at: number;
 }
 
 export function toDbSnippet(s: Snippet, userId: string): DbSnippet {
@@ -71,9 +84,17 @@ export function fromDbSnippet(d: DbSnippet): Snippet {
 }
 
 export function toDbCategory(c: Category, userId: string): DbCategory {
-  return { id: c.id, user_id: userId, name: c.name, color: c.color };
+  return { id: c.id, user_id: userId, name: c.name, color: c.color, parent_id: c.parentId, order: c.order ?? 0 };
 }
 
-export function fromDbCategory(d: DbCategory): Category {
-  return { id: d.id, name: d.name, color: d.color };
+export function fromDbCategory(d: DbCategory, idx = 0): Category {
+  return { id: d.id, name: d.name, color: d.color, parentId: d.parent_id ?? undefined, order: d.order ?? idx };
+}
+
+export function toDbNote(n: Note, userId: string): DbNote {
+  return { id: n.id, user_id: userId, title: n.title, content: n.content, category_id: n.categoryId, emoji: n.emoji, created_at: n.createdAt, updated_at: n.updatedAt };
+}
+
+export function fromDbNote(d: DbNote): Note {
+  return { id: d.id, title: d.title, content: d.content, categoryId: d.category_id, emoji: d.emoji ?? '📝', createdAt: d.created_at, updatedAt: d.updated_at };
 }

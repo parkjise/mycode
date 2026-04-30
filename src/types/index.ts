@@ -37,6 +37,18 @@ export interface Category {
   id: string;
   name: string;
   color: string;
+  parentId?: string;
+  order: number;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  categoryId: string;
+  emoji: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Snippet {

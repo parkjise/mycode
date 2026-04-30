@@ -7,6 +7,7 @@ import {
   CARD_WIDTH_DEFAULT,
 } from './constants';
 import { useSnippets } from './hooks/useSnippets';
+import { useNotes } from './hooks/useNotes';
 import { useAuth } from './hooks/useAuth';
 import { decodeSnippetFromUrl, clearUrlHash } from './utils/urlShare';
 import Toolbar from './components/Toolbar/Toolbar';
@@ -15,10 +16,10 @@ import CodePreview from './components/CodePreview/CodePreview';
 import Sidebar from './components/Sidebar/Sidebar';
 import SaveModal from './components/SaveModal/SaveModal';
 import AuthButton from './components/AuthButton/AuthButton';
+import NoteEditor from './components/NoteEditor/NoteEditor';
 import styles from './App.module.css';
 
 const freshState = (): AppState => {
-  // URL 공유 링크로 접속한 경우 해당 스니펫을 복원
   const fromUrl = decodeSnippetFromUrl();
   if (fromUrl) {
     clearUrlHash();
@@ -43,6 +44,7 @@ export default function App() {
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('preview');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'code' | 'notes'>('code');
   const previewRef = useRef<HTMLDivElement>(null);
 
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
@@ -58,16 +60,27 @@ export default function App() {
     renameSnippet,
     addCategory,
     renameCategory,
+    changeCategoryColor,
     deleteCategory,
+    moveCategoryUp,
+    moveCategoryDown,
     exportLibrary,
     importLibrary,
   } = useSnippets(user?.id ?? null, !authLoading);
+
+  const {
+    notes,
+    activeNoteId,
+    setActiveNoteId,
+    saveNote,
+    deleteNote,
+    createNote,
+  } = useNotes(user?.id ?? null, !authLoading);
 
   const update = <K extends keyof AppState>(key: K, value: AppState[K]) => {
     setState((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Load snippet into editor
   const loadSnippet = useCallback(
     (snippet: Snippet) => {
       setState({
@@ -81,14 +94,26 @@ export default function App() {
         cardWidth: snippet.cardWidth,
       });
       setActiveId(snippet.id);
+      setActiveNoteId(null);
     },
-    [setActiveId]
+    [setActiveId, setActiveNoteId]
   );
 
-  // Save: update existing or open modal for new
+  const handleSelectNote = useCallback((note: typeof notes[0]) => {
+    setActiveNoteId(note.id);
+    setActiveId(null);
+  }, [setActiveNoteId, setActiveId]);
+
+  const handleNewNote = useCallback((categoryId: string) => {
+    const note = createNote(categoryId);
+    saveNote(note);
+    setActiveNoteId(note.id);
+    setActiveId(null);
+    setSidebarTab('notes');
+  }, [createNote, saveNote, setActiveNoteId, setActiveId]);
+
   const handleSave = useCallback(() => {
     if (activeId) {
-      // Update existing snippet silently
       const existing = snippets.find((s) => s.id === activeId);
       if (existing) {
         saveSnippet({
@@ -108,11 +133,9 @@ export default function App() {
         return;
       }
     }
-    // New snippet → open modal
     setSaveModalOpen(true);
   }, [activeId, snippets, saveSnippet, state]);
 
-  // Confirm save from modal
   const handleSaveConfirm = useCallback(
     (name: string, categoryId: string) => {
       const id = activeId && !snippets.find((s) => s.id === activeId)
@@ -140,25 +163,25 @@ export default function App() {
     [activeId, snippets, saveSnippet, state]
   );
 
-  // New snippet: reset editor
   const handleNew = useCallback(() => {
     setState(freshState());
     setActiveId(null);
   }, [setActiveId]);
 
-  // Ctrl+S to save
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        handleSave();
+        if (!activeNoteId) handleSave();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave]);
+  }, [handleSave, activeNoteId]);
 
   const activeSnippet = snippets.find((s) => s.id === activeId);
+  const activeNote = notes.find((n) => n.id === activeNoteId);
+  const isNoteMode = Boolean(activeNoteId);
 
   return (
     <div className={styles.app} data-theme={state.theme}>
@@ -169,39 +192,46 @@ export default function App() {
             className={styles.sidebarToggle}
             onClick={() => setSidebarOpen((v) => !v)}
             aria-label="Toggle sidebar"
-            title="Toggle snippet library"
+            title="Toggle sidebar"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="9" y1="3" x2="9" y2="21" />
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
             </svg>
           </button>
-          <button
-            className={`${styles.sidebarToggle} ${styles.editorToggle}`}
-            onClick={() => setEditorOpen((v) => !v)}
-            aria-label="Toggle editor"
-            title={editorOpen ? '에디터 닫기' : '에디터 열기'}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="16 18 22 12 16 6" />
-              <polyline points="8 6 2 12 8 18" />
-            </svg>
-          </button>
+          {!isNoteMode && (
+            <button
+              className={`${styles.sidebarToggle} ${styles.editorToggle}`}
+              onClick={() => setEditorOpen((v) => !v)}
+              aria-label="Toggle editor"
+              title={editorOpen ? '에디터 닫기' : '에디터 열기'}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </button>
+          )}
           <div className={styles.brand}>
             <span className={styles.brandIcon}>&#x276F;</span>
             <span className={styles.brandName}>SnipShot</span>
-            <span className={styles.brandTag}>Code Snippet Generator</span>
+            <span className={styles.brandTag}>Code + Notes</span>
           </div>
         </div>
 
         <div className={styles.headerCenter}>
-          {activeSnippet && (
+          {activeSnippet && !isNoteMode && (
             <div className={styles.activeSnippetBadge}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
               </svg>
               <span>{activeSnippet.name}</span>
               {savedFeedback && <span className={styles.savedDot} />}
+            </div>
+          )}
+          {activeNote && isNoteMode && (
+            <div className={styles.activeSnippetBadge}>
+              <span>{activeNote.emoji}</span>
+              <span>{activeNote.title || '제목 없음'}</span>
             </div>
           )}
         </div>
@@ -216,9 +246,7 @@ export default function App() {
           />
           <button
             className={styles.themeBtn}
-            onClick={() =>
-              update('theme', state.theme === 'dark' ? 'light' : 'dark')
-            }
+            onClick={() => update('theme', state.theme === 'dark' ? 'light' : 'dark')}
             aria-label="Toggle theme"
           >
             {state.theme === 'dark' ? '☀️' : '🌙'}
@@ -227,101 +255,114 @@ export default function App() {
         </div>
       </header>
 
-      {/* Body: sidebar + workspace */}
+      {/* Body */}
       <div className={styles.body}>
-        {/* Sidebar */}
         <Sidebar
           categories={categories}
           snippets={snippets}
+          notes={notes}
           activeId={activeId}
+          activeNoteId={activeNoteId}
+          sidebarTab={sidebarTab}
+          onSidebarTabChange={setSidebarTab}
           onSelect={loadSnippet}
           onDelete={deleteSnippet}
           onRename={renameSnippet}
+          onSelectNote={handleSelectNote}
+          onDeleteNote={deleteNote}
+          onNewNote={handleNewNote}
           onDeleteCategory={deleteCategory}
           onRenameCategory={renameCategory}
+          onChangeCategoryColor={changeCategoryColor}
+          onMoveCategoryUp={moveCategoryUp}
+          onMoveCategoryDown={moveCategoryDown}
+          onAddCategory={addCategory}
           isCollapsed={!sidebarOpen}
           onExport={exportLibrary}
           onImport={importLibrary}
         />
 
-        {/* Right: toolbar + main */}
         <div className={styles.workspace}>
-          <Toolbar
-            language={state.language}
-            fileName={state.fileName}
-            fontSize={state.fontSize}
-            padding={state.padding}
-            backgroundStyle={state.backgroundStyle}
-            cardWidth={state.cardWidth}
-            onLanguageChange={(v: LanguageKey) => update('language', v)}
-            onFileNameChange={(v: string) => update('fileName', v)}
-            onFontSizeChange={(v: number) => update('fontSize', v)}
-            onPaddingChange={(v: number) => update('padding', v)}
-            onBackgroundStyleChange={(v: BackgroundStyle) =>
-              update('backgroundStyle', v)
-            }
-            onCardWidthChange={(v: number) => update('cardWidth', v)}
-            previewRef={previewRef}
-            code={state.code}
-            isSaved={savedFeedback}
-            onSave={handleSave}
-            onNew={handleNew}
-            appState={state}
-          />
-
-          {/* 모바일 탭 */}
-          <div className={styles.mobileTabs}>
-            <button
-              className={`${styles.mobileTab} ${mobileTab === 'editor' ? styles.mobileTabActive : ''}`}
-              onClick={() => setMobileTab('editor')}
-            >
-              Editor
-            </button>
-            <button
-              className={`${styles.mobileTab} ${mobileTab === 'preview' ? styles.mobileTabActive : ''}`}
-              onClick={() => setMobileTab('preview')}
-            >
-              Preview
-            </button>
-          </div>
-
-          <main className={`${styles.main} ${!editorOpen ? styles.editorClosed : ''}`}>
-            <section className={`${styles.inputPanel} ${mobileTab !== 'editor' ? styles.mobileHidden : ''}`}>
-              <div className={styles.panelLabel}>
-                <span className={styles.dot} />
-                Editor
-              </div>
-              <CodeInput
-                code={state.code}
-                onChange={(v: string) => update('code', v)}
+          {isNoteMode && activeNote ? (
+            <NoteEditor
+              note={activeNote}
+              categories={categories}
+              onSave={saveNote}
+              onDelete={(id) => { deleteNote(id); }}
+              theme={state.theme}
+            />
+          ) : (
+            <>
+              <Toolbar
                 language={state.language}
+                fileName={state.fileName}
+                fontSize={state.fontSize}
+                padding={state.padding}
+                backgroundStyle={state.backgroundStyle}
+                cardWidth={state.cardWidth}
+                onLanguageChange={(v: LanguageKey) => update('language', v)}
+                onFileNameChange={(v: string) => update('fileName', v)}
+                onFontSizeChange={(v: number) => update('fontSize', v)}
+                onPaddingChange={(v: number) => update('padding', v)}
+                onBackgroundStyleChange={(v: BackgroundStyle) => update('backgroundStyle', v)}
+                onCardWidthChange={(v: number) => update('cardWidth', v)}
+                previewRef={previewRef}
+                code={state.code}
+                isSaved={savedFeedback}
+                onSave={handleSave}
+                onNew={handleNew}
+                appState={state}
               />
-            </section>
 
-            <section className={`${styles.previewPanel} ${mobileTab !== 'preview' ? styles.mobileHidden : ''}`}>
-              <div className={styles.panelLabel}>
-                <span className={styles.dot} style={{ background: 'var(--accent)' }} />
-                Preview
+              <div className={styles.mobileTabs}>
+                <button
+                  className={`${styles.mobileTab} ${mobileTab === 'editor' ? styles.mobileTabActive : ''}`}
+                  onClick={() => setMobileTab('editor')}
+                >Editor</button>
+                <button
+                  className={`${styles.mobileTab} ${mobileTab === 'preview' ? styles.mobileTabActive : ''}`}
+                  onClick={() => setMobileTab('preview')}
+                >Preview</button>
               </div>
-              <div className={styles.previewScroll}>
-                <CodePreview
-                  ref={previewRef}
-                  code={state.code}
-                  language={state.language}
-                  fileName={state.fileName}
-                  theme={state.theme}
-                  fontSize={state.fontSize}
-                  padding={state.padding}
-                  backgroundStyle={state.backgroundStyle}
-                  cardWidth={state.cardWidth}
-                />
-              </div>
-            </section>
-          </main>
+
+              <main className={`${styles.main} ${!editorOpen ? styles.editorClosed : ''}`}>
+                <section className={`${styles.inputPanel} ${mobileTab !== 'editor' ? styles.mobileHidden : ''}`}>
+                  <div className={styles.panelLabel}>
+                    <span className={styles.dot} />
+                    Editor
+                  </div>
+                  <CodeInput
+                    code={state.code}
+                    onChange={(v: string) => update('code', v)}
+                    language={state.language}
+                  />
+                </section>
+
+                <section className={`${styles.previewPanel} ${mobileTab !== 'preview' ? styles.mobileHidden : ''}`}>
+                  <div className={styles.panelLabel}>
+                    <span className={styles.dot} style={{ background: 'var(--accent)' }} />
+                    Preview
+                  </div>
+                  <div className={styles.previewScroll}>
+                    <CodePreview
+                      ref={previewRef}
+                      code={state.code}
+                      language={state.language}
+                      fileName={state.fileName}
+                      theme={state.theme}
+                      fontSize={state.fontSize}
+                      padding={state.padding}
+                      backgroundStyle={state.backgroundStyle}
+                      cardWidth={state.cardWidth}
+                    />
+                  </div>
+                </section>
+              </main>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Save modal */}
       <SaveModal
         isOpen={saveModalOpen}
         categories={categories}

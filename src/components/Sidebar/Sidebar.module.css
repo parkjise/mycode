@@ -10,6 +10,43 @@
   position: relative;
 }
 
+/* ─── Tabs ────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 36px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-control);
+}
+
+.tabActive {
+  color: var(--text-accent);
+  border-bottom-color: var(--accent);
+}
+
 /* ─── Search ──────────────────────────────────────────────────── */
 .searchWrap {
   position: relative;
@@ -67,12 +104,187 @@
 
 /* ─── Meta ────────────────────────────────────────────────────── */
 .sidebarMeta {
-  padding: 6px 14px;
+  padding: 5px 10px 5px 14px;
   font-size: 10px;
   color: var(--text-muted);
   font-weight: 500;
   letter-spacing: 0.3px;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.addCatBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  background: var(--bg-control);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.addCatBtn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text-accent);
+}
+
+/* ─── Add category form ────────────────────────────────────────── */
+.addCatForm {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-panel);
+  animation: slideDown 120ms ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.addCatRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.addCatDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: block;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+.addCatInput {
+  flex: 1;
+  height: 26px;
+  padding: 0 8px;
+  background: var(--bg-control);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+}
+
+.addCatConfirm,
+.addCatCancel {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.addCatConfirm {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.addCatConfirm:hover {
+  background: var(--success);
+  color: #fff;
+}
+
+.addCatCancel {
+  color: var(--text-muted);
+}
+
+.addCatCancel:hover {
+  background: var(--bg-control-hover);
+  color: var(--text-primary);
+}
+
+/* ─── Color swatches ───────────────────────────────────────────── */
+.colorSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.colorSwatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--transition), border-color var(--transition);
+}
+
+.colorSwatch:hover {
+  transform: scale(1.25);
+  border-color: rgba(255,255,255,0.5);
+}
+
+/* ─── Inline color picker (dot click) ─────────────────────────── */
+.inlineColorPicker {
+  padding: 6px 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-color);
+  animation: slideDown 100ms ease;
+}
+
+/* ─── Context menu color row ───────────────────────────────────── */
+.ctxColorRow {
+  padding: 6px 14px 8px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2px;
+}
+
+.ctxColorLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.ctxColorSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ctxColorSwatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--transition), border-color var(--transition);
+}
+
+.ctxColorSwatch:hover {
+  transform: scale(1.2);
+}
+
+.ctxColorSwatchActive {
+  border-color: rgba(255,255,255,0.8) !important;
+  transform: scale(1.15);
 }
 
 /* ─── Category list ───────────────────────────────────────────── */
@@ -437,6 +649,47 @@
 .importCancelBtn:hover {
   background: var(--bg-control-hover);
   color: var(--text-primary);
+}
+
+/* ─── Note items ──────────────────────────────────────────────── */
+.noteEmoji {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.newNoteBtn {
+  display: block;
+  width: calc(100% - 48px);
+  margin: 4px 0 4px;
+  padding: 4px 8px;
+  background: none;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+}
+
+.newNoteBtn:hover {
+  border-color: var(--accent);
+  color: var(--text-accent);
+  background: var(--accent-soft);
+}
+
+/* ─── Add subcategory row ──────────────────────────────────────── */
+.addSubcatRow {
+  padding: 4px 12px;
+}
+
+/* ─── Context menu separator ─────────────────────────────────── */
+.ctxSep {
+  height: 1px;
+  background: var(--border-color);
+  margin: 3px 0;
 }
 
 /* ─── Responsive ──────────────────────────────────────────────── */

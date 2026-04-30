@@ -251,6 +251,13 @@
   transform: scale(1.2);
 }
 
+.range::-moz-range-track {
+  height: 4px;
+  background: var(--bg-control-active);
+  border-radius: 2px;
+  border: none;
+}
+
 .range::-moz-range-thumb {
   width: 14px;
   height: 14px;
@@ -258,6 +265,8 @@
   background: var(--accent);
   cursor: pointer;
   border: 2px solid var(--bg-toolbar);
+  box-shadow: 0 0 0 1px var(--accent);
+  box-sizing: border-box;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */

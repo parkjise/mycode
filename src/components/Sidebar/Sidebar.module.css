@@ -512,6 +512,16 @@
   color: var(--danger);
 }
 
+.ctxItem:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ctxItem:disabled:hover {
+  background: none;
+  color: var(--danger);
+}
+
 /* ─── Footer: Export / Import ────────────────────────────────── */
 .sidebarFooter {
   flex-shrink: 0;

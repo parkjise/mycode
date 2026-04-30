@@ -694,7 +694,12 @@ export default function Sidebar({
                   Move Down
                 </button>
                 <div className={styles.ctxSep} />
-                <button className={`${styles.ctxItem} ${styles.ctxDanger}`} onClick={() => { handleDeleteCategory(contextMenu.id); closeContext(); }}>
+                <button
+                  className={`${styles.ctxItem} ${styles.ctxDanger}`}
+                  disabled={activeCategories.length <= 1}
+                  title={activeCategories.length <= 1 ? '마지막 카테고리는 삭제할 수 없습니다' : undefined}
+                  onClick={() => { handleDeleteCategory(contextMenu.id); closeContext(); }}
+                >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
                   </svg>

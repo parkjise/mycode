@@ -25,19 +25,26 @@ export function useNotes(userId: string | null, authReady: boolean) {
 
   const loadFromCloud = useCallback(async () => {
     if (!supabase) return;
-    const db = supabase;
     const uid = userIdRef.current;
+    if (!uid) return; // guests use localStorage only
+    const db = supabase;
     setSyncing(true);
     try {
-      const query = uid
-        ? db.from('notes').select('*').eq('user_id', uid).order('updated_at', { ascending: false })
-        : db.from('notes').select('*').order('updated_at', { ascending: false });
-      const { data, error } = await query;
+      const { data, error } = await db
+        .from('notes').select('*')
+        .eq('user_id', uid)
+        .order('updated_at', { ascending: false });
       if (error) { console.error('notes fetch error:', error); return; }
-      if (data !== null) {
+      if (data && data.length > 0) {
         const loaded = data.map(fromDbNote);
         setNotes(loaded);
         persist(NOTES_KEY, loaded);
+      } else if (data && data.length === 0) {
+        // cloud empty → upload local notes (first-time login sync)
+        const localNotes = load<Note[]>(NOTES_KEY, []);
+        if (localNotes.length > 0) {
+          await Promise.all(localNotes.map((n) => db.from('notes').upsert(toDbNote(n, uid))));
+        }
       }
     } catch (err) {
       console.error('Notes sync failed:', err);

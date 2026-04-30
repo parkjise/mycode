@@ -50,38 +50,42 @@ export function useSnippets(userId: string | null, authReady: boolean) {
   // ─── 클라우드에서 전체 데이터 로드 ────────────────────────────
   const loadFromCloud = useCallback(async () => {
     if (!supabase) return;
-    const db = supabase;
     const uid = userIdRef.current;
+    if (!uid) return; // guests use localStorage only
+    const db = supabase;
 
     setSyncing(true);
     try {
-      const snippetQuery = uid
-        ? db.from('snippets').select('*').eq('user_id', uid).order('updated_at', { ascending: false })
-        : db.from('snippets').select('*').order('updated_at', { ascending: false });
-
-      const categoryQuery = uid
-        ? db.from('categories').select('*').eq('user_id', uid)
-        : db.from('categories').select('*');
-
       const [{ data: dbSnippets, error: sErr }, { data: dbCategories, error: cErr }] = await Promise.all([
-        snippetQuery,
-        categoryQuery,
+        db.from('snippets').select('*').eq('user_id', uid).order('updated_at', { ascending: false }),
+        db.from('categories').select('*').eq('user_id', uid),
       ]);
 
       if (sErr) console.error('snippets fetch error:', sErr);
       if (cErr) console.error('categories fetch error:', cErr);
 
-      // null 체크만 (빈 배열도 정상 — 삭제 후 빈 상태 반영)
-      if (dbSnippets !== null) {
+      if (dbSnippets && dbSnippets.length > 0) {
         const loaded = dbSnippets.map(fromDbSnippet);
         setSnippets(loaded);
         persist(SNIPPETS_KEY, loaded);
+      } else if (dbSnippets && dbSnippets.length === 0) {
+        // cloud empty → upload local snippets (first-time login sync)
+        const localSnippets = load<Snippet[]>(SNIPPETS_KEY, []);
+        if (localSnippets.length > 0) {
+          await Promise.all(localSnippets.map((s) => db.from('snippets').upsert(toDbSnippet(s, uid))));
+        }
       }
 
       if (dbCategories && dbCategories.length > 0) {
         const loaded = dbCategories.map((d, i) => fromDbCategory(d, i));
         setCategories(loaded);
         persist(CATEGORIES_KEY, loaded);
+      } else if (dbCategories && dbCategories.length === 0) {
+        // cloud empty → upload local categories (first-time login sync)
+        const localCats = load<Category[]>(CATEGORIES_KEY, DEFAULT_CATEGORIES);
+        if (localCats.length > 0) {
+          await Promise.all(localCats.map((c) => db.from('categories').upsert(toDbCategory(c, uid))));
+        }
       }
     } catch (err) {
       console.error('Cloud sync failed, using local data:', err);

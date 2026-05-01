@@ -110,6 +110,7 @@ export default function App() {
   const handleSelectNote = useCallback((note: typeof notes[0]) => {
     setActiveNoteId(note.id);
     setActiveId(null);
+    setSidebarTab('notes');
   }, [setActiveNoteId, setActiveId]);
 
   const handleNewNote = useCallback((categoryId: string) => {
@@ -187,6 +188,13 @@ export default function App() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave, activeNoteId, sidebarTab]);
+
+  // Auto-select most recent note when on Notes tab with no note open (after refresh or note deletion)
+  useEffect(() => {
+    if (sidebarTab === 'notes' && activeNoteId === null && notes.length > 0) {
+      setActiveNoteId(notes[0].id);
+    }
+  }, [sidebarTab, activeNoteId, notes, setActiveNoteId]);
 
   const activeSnippet = snippets.find((s) => s.id === activeId);
   const activeNote = notes.find((n) => n.id === activeNoteId);

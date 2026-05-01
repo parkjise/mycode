@@ -90,10 +90,14 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
       handlePaste(view, event) {
         const html = event.clipboardData?.getData('text/html') ?? '';
         const text = event.clipboardData?.getData('text/plain') ?? '';
-        // Plain text multi-line paste → auto-detect language and create code block
-        if (!html && text.includes('\n')) {
+        // HTML에 이미 <pre> 코드블록이 있으면 transformPastedHTML에 위임
+        if (/<pre[\s>]/i.test(html)) return false;
+        // 멀티라인 텍스트 → 언어 자동 감지 후 코드 블록으로 변환
+        if (text.includes('\n')) {
           const result = lowlight.highlightAuto(text);
-          const lang = (result.data as { language?: string })?.language ?? 'plaintext';
+          const lang = (result.data as { language?: string })?.language;
+          // 언어 감지 실패(plaintext)이면 일반 붙여넣기
+          if (!lang || lang === 'plaintext') return false;
           event.preventDefault();
           const { schema } = view.state;
           const node = schema.nodes.codeBlock.create(

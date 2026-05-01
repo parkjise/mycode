@@ -87,6 +87,25 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
         });
         return div.innerHTML;
       },
+      handlePaste(view, event) {
+        const html = event.clipboardData?.getData('text/html') ?? '';
+        const text = event.clipboardData?.getData('text/plain') ?? '';
+        // Plain text multi-line paste → auto-detect language and create code block
+        if (!html && text.includes('\n')) {
+          const result = lowlight.highlightAuto(text);
+          const lang = (result.data as { language?: string })?.language ?? 'plaintext';
+          event.preventDefault();
+          const { schema } = view.state;
+          const node = schema.nodes.codeBlock.create(
+            { language: lang },
+            text ? schema.text(text) : undefined,
+          );
+          const tr = view.state.tr.replaceSelectionWith(node);
+          view.dispatch(tr);
+          return true;
+        }
+        return false;
+      },
     },
   });
 

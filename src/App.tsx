@@ -181,7 +181,7 @@ export default function App() {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (!activeNoteId) handleSave();
+        if (!activeNoteId && sidebarTab === 'code') handleSave();
       }
     };
     window.addEventListener('keydown', handler);
@@ -190,7 +190,7 @@ export default function App() {
 
   const activeSnippet = snippets.find((s) => s.id === activeId);
   const activeNote = notes.find((n) => n.id === activeNoteId);
-  const isNoteMode = Boolean(activeNoteId);
+  const isNoteMode = Boolean(activeNoteId) || sidebarTab === 'notes';
 
   return (
     <div className={styles.app} data-theme={state.theme}>
@@ -308,6 +308,16 @@ export default function App() {
               onAddCategory={addNoteCategory}
               theme={state.theme}
             />
+          ) : sidebarTab === 'notes' ? (
+            <div className={styles.emptyNotes}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              <p>사이드바에서 노트를 선택하거나<br/>카테고리 아래 <strong>+ 새 노트</strong>를 눌러주세요</p>
+            </div>
           ) : (
             <>
               <Toolbar

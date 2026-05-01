@@ -445,6 +445,81 @@
   color: var(--text-primary);
 }
 
+/* ─── Syntax highlighting (lowlight / hljs) ──────────────────── */
+/* :global() required — hljs classes are added at runtime by lowlight, not by CSS Modules */
+/* dark theme (default) */
+.proseMirror :global(.hljs-comment),
+.proseMirror :global(.hljs-quote) { color: #6a9955; }
+
+.proseMirror :global(.hljs-keyword),
+.proseMirror :global(.hljs-selector-tag),
+.proseMirror :global(.hljs-built_in),
+.proseMirror :global(.hljs-name),
+.proseMirror :global(.hljs-tag) { color: #c586c0; }
+
+.proseMirror :global(.hljs-string),
+.proseMirror :global(.hljs-title),
+.proseMirror :global(.hljs-section),
+.proseMirror :global(.hljs-attribute),
+.proseMirror :global(.hljs-literal),
+.proseMirror :global(.hljs-template-tag),
+.proseMirror :global(.hljs-template-variable),
+.proseMirror :global(.hljs-type),
+.proseMirror :global(.hljs-addition) { color: #ce9178; }
+
+.proseMirror :global(.hljs-deletion),
+.proseMirror :global(.hljs-selector-attr),
+.proseMirror :global(.hljs-selector-pseudo),
+.proseMirror :global(.hljs-meta) { color: #9cdcfe; }
+
+.proseMirror :global(.hljs-doctag) { color: #608b4e; }
+.proseMirror :global(.hljs-attr) { color: #9cdcfe; }
+
+.proseMirror :global(.hljs-symbol),
+.proseMirror :global(.hljs-bullet),
+.proseMirror :global(.hljs-link) { color: #569cd6; }
+
+.proseMirror :global(.hljs-emphasis) { font-style: italic; }
+.proseMirror :global(.hljs-strong) { font-weight: bold; }
+
+.proseMirror :global(.hljs-number),
+.proseMirror :global(.hljs-regexp) { color: #b5cea8; }
+
+.proseMirror :global(.hljs-variable),
+.proseMirror :global(.hljs-template-variable),
+.proseMirror :global(.hljs-class) :global(.hljs-title) { color: #4ec9b0; }
+
+.proseMirror :global(.hljs-function) :global(.hljs-title),
+.proseMirror :global(.hljs-title):global(.hljs-function_) { color: #dcdcaa; }
+
+.proseMirror :global(.hljs-params) { color: #9cdcfe; }
+
+/* light theme overrides */
+[data-theme="light"] .proseMirror :global(.hljs-comment),
+[data-theme="light"] .proseMirror :global(.hljs-quote) { color: #008000; }
+
+[data-theme="light"] .proseMirror :global(.hljs-keyword),
+[data-theme="light"] .proseMirror :global(.hljs-selector-tag),
+[data-theme="light"] .proseMirror :global(.hljs-built_in) { color: #af00db; }
+
+[data-theme="light"] .proseMirror :global(.hljs-string),
+[data-theme="light"] .proseMirror :global(.hljs-addition) { color: #a31515; }
+
+[data-theme="light"] .proseMirror :global(.hljs-number),
+[data-theme="light"] .proseMirror :global(.hljs-regexp) { color: #098658; }
+
+[data-theme="light"] .proseMirror :global(.hljs-variable),
+[data-theme="light"] .proseMirror :global(.hljs-class) :global(.hljs-title) { color: #267f99; }
+
+[data-theme="light"] .proseMirror :global(.hljs-function) :global(.hljs-title),
+[data-theme="light"] .proseMirror :global(.hljs-title):global(.hljs-function_) { color: #795e26; }
+
+[data-theme="light"] .proseMirror :global(.hljs-attr),
+[data-theme="light"] .proseMirror :global(.hljs-params) { color: #001080; }
+
+[data-theme="light"] .proseMirror :global(.hljs-symbol),
+[data-theme="light"] .proseMirror :global(.hljs-link) { color: #0000ff; }
+
 .proseMirror blockquote {
   border-left: 3px solid var(--accent);
   margin: 0.8em 0;

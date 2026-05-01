@@ -10,8 +10,12 @@ import TaskItem from '@tiptap/extension-task-item';
 import Highlight from '@tiptap/extension-highlight';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { createLowlight, common } from 'lowlight';
 import { Note, Category } from '../../types';
 import styles from './NoteEditor.module.css';
+
+const lowlight = createLowlight(common);
 
 interface NoteEditorProps {
   note: Note;
@@ -50,7 +54,8 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] }, codeBlock: false }),
+      CodeBlockLowlight.configure({ lowlight, defaultLanguage: 'plaintext', languageClassPrefix: 'language-' }),
       Underline,
       Highlight.configure({ multicolor: false }),
       Table.configure({ resizable: false }),

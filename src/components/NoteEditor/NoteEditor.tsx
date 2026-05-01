@@ -67,7 +67,7 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
     },
   });
 
-  // Reset editor when note changes
+  // Reset editor when note changes and focus for immediate typing
   useEffect(() => {
     if (!editor) return;
     setTitle(note.title);
@@ -76,6 +76,7 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
     if (editor.getHTML() !== note.content) {
       editor.commands.setContent(note.content || '');
     }
+    editor.commands.focus('end');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note.id]);
 

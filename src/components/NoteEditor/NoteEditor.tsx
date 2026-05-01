@@ -18,16 +18,25 @@ interface NoteEditorProps {
   categories: Category[];
   onSave: (note: Note) => void;
   onDelete: (id: string) => void;
+  onAddCategory: (name: string, color: string) => string | Promise<string>;
   theme: 'dark' | 'light';
 }
 
 const EMOJI_OPTIONS = ['📝', '📌', '💡', '🔥', '⭐', '✅', '📖', '🎯', '🚀', '💻', '🎨', '📊', '🔧', '📦', '🌐'];
 
-export default function NoteEditor({ note, categories, onSave, onDelete, theme }: NoteEditorProps) {
+const CAT_COLORS = ['#8888a8','#f7df1e','#3178c6','#61dafb','#ff7262','#10b981','#f59e0b','#ef4444'];
+
+export default function NoteEditor({ note, categories, onSave, onDelete, onAddCategory, theme }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [emoji, setEmoji] = useState(note.emoji);
-  const [categoryId, setCategoryId] = useState(note.categoryId);
+  // 카테고리가 목록에 없으면 첫 번째 카테고리로 자동 복구
+  const resolveCategory = (id: string) =>
+    categories.some((c) => c.id === id) ? id : (categories[0]?.id ?? id);
+  const [categoryId, setCategoryId] = useState(() => resolveCategory(note.categoryId));
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showNewCat, setShowNewCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState(CAT_COLORS[0]);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noteRef = useRef(note);
@@ -63,7 +72,7 @@ export default function NoteEditor({ note, categories, onSave, onDelete, theme }
     if (!editor) return;
     setTitle(note.title);
     setEmoji(note.emoji);
-    setCategoryId(note.categoryId);
+    setCategoryId(resolveCategory(note.categoryId));
     if (editor.getHTML() !== note.content) {
       editor.commands.setContent(note.content || '');
     }
@@ -110,6 +119,15 @@ export default function NoteEditor({ note, categories, onSave, onDelete, theme }
     triggerSave();
   };
 
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    const id = await Promise.resolve(onAddCategory(newCatName.trim(), newCatColor));
+    setCategoryId(id);
+    setShowNewCat(false);
+    setNewCatName('');
+    triggerSave();
+  };
+
   const wordCount = editor ? editor.getText().trim().split(/\s+/).filter(Boolean).length : 0;
 
   const ToolbarBtn = ({ onClick, active, title: t, children }: { onClick: () => void; active?: boolean; title: string; children: React.ReactNode }) => (
@@ -149,15 +167,52 @@ export default function NoteEditor({ note, categories, onSave, onDelete, theme }
           />
         </div>
         <div className={styles.noteMeta2}>
-          <select
-            className={styles.categorySelect}
-            value={categoryId}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div className={styles.categoryWrap}>
+            <select
+              className={styles.categorySelect}
+              value={categoryId}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <button
+              className={styles.addCatBtn}
+              onClick={() => { setShowNewCat((v) => !v); setNewCatName(''); }}
+              title="새 카테고리 추가"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
+          {showNewCat && (
+            <div className={styles.newCatForm}>
+              <input
+                className={styles.newCatInput}
+                placeholder="카테고리 이름"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') setShowNewCat(false); }}
+                autoFocus
+              />
+              <div className={styles.newCatColors}>
+                {CAT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    className={`${styles.colorDot} ${newCatColor === c ? styles.colorDotActive : ''}`}
+                    style={{ background: c }}
+                    onClick={() => setNewCatColor(c)}
+                  />
+                ))}
+              </div>
+              <div className={styles.newCatActions}>
+                <button className={styles.newCatConfirm} onClick={handleAddCategory} disabled={!newCatName.trim()}>만들기</button>
+                <button className={styles.newCatCancel} onClick={() => setShowNewCat(false)}>취소</button>
+              </div>
+            </div>
+          )}
           <span className={styles.saveStatus}>
             {savedAt ? '저장됨' : ''}
           </span>

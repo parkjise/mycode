@@ -32,6 +32,7 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .emojiWrap {
@@ -123,6 +124,119 @@
 
 .categorySelect:focus {
   border-color: var(--border-focus);
+}
+
+.categoryWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.addCatBtn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-control);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.addCatBtn:hover {
+  background: var(--bg-control-hover);
+  color: var(--text-primary);
+}
+
+.newCatForm {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 10px;
+  z-index: 200;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.newCatInput {
+  height: 28px;
+  padding: 0 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  width: 100%;
+}
+
+.newCatInput:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.newCatColors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.colorDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition);
+}
+
+.colorDot:hover {
+  transform: scale(1.2);
+}
+
+.colorDotActive {
+  border-color: var(--text-primary);
+}
+
+.newCatActions {
+  display: flex;
+  gap: 6px;
+}
+
+.newCatConfirm {
+  flex: 1;
+  height: 26px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.newCatConfirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.newCatCancel {
+  height: 26px;
+  padding: 0 10px;
+  background: var(--bg-control);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .saveStatus {

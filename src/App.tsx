@@ -45,6 +45,7 @@ export default function App() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'code' | 'notes'>('code');
+  const [lastCodeCategoryId, setLastCodeCategoryId] = useState('general');
   const previewRef = useRef<HTMLDivElement>(null);
 
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
@@ -163,6 +164,7 @@ export default function App() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
+      setLastCodeCategoryId(categoryId);
       setSaveModalOpen(false);
       setSavedFeedback(true);
       setTimeout(() => setSavedFeedback(false), 2000);
@@ -303,6 +305,7 @@ export default function App() {
               categories={noteCategories}
               onSave={saveNote}
               onDelete={(id) => { deleteNote(id); }}
+              onAddCategory={addNoteCategory}
               theme={state.theme}
             />
           ) : (
@@ -381,7 +384,7 @@ export default function App() {
         isOpen={saveModalOpen}
         categories={categories}
         defaultName={state.fileName.replace(/\.[^.]+$/, '') || 'My Snippet'}
-        defaultCategoryId="general"
+        defaultCategoryId={lastCodeCategoryId}
         isUpdate={false}
         onConfirm={handleSaveConfirm}
         onCancel={() => setSaveModalOpen(false)}

@@ -69,6 +69,24 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
     content: note.content,
     editorProps: {
       attributes: { class: styles.proseMirror },
+      transformPastedHTML(html) {
+        // Normalize pasted code blocks (ChatGPT, GitHub, etc.)
+        // ChatGPT structure: <pre><div>label</div><code class="language-js">...</code></pre>
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        div.querySelectorAll('pre').forEach(pre => {
+          const code = pre.querySelector('code');
+          if (!code) return;
+          const langClass = [...code.classList].find(c => c.startsWith('language-'));
+          const newPre = document.createElement('pre');
+          const newCode = document.createElement('code');
+          if (langClass) newCode.className = langClass;
+          newCode.textContent = code.textContent ?? '';
+          newPre.appendChild(newCode);
+          pre.replaceWith(newPre);
+        });
+        return div.innerHTML;
+      },
     },
   });
 

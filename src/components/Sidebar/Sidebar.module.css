@@ -706,8 +706,12 @@
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
-    max-height: 320px;
+    max-height: 220px;
     border-right: none;
     border-bottom: 1px solid var(--border-color);
+  }
+
+  .catList {
+    min-height: 120px;
   }
 }

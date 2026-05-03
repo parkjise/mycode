@@ -457,11 +457,9 @@ export default function Sidebar({
     );
   };
 
-  if (isCollapsed) return null;
-
   return (
     <>
-      <aside className={styles.sidebar} onClick={closeContext}>
+      <aside className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ''}`} onClick={closeContext}>
         {/* Tabs */}
         <div className={styles.tabs}>
           <button

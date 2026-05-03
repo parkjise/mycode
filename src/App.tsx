@@ -39,7 +39,7 @@ const freshState = (): AppState => {
 
 export default function App() {
   const [state, setState] = useState<AppState>(freshState);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 1200);
   const [editorOpen, setEditorOpen] = useState(true);
   const [mobileTab, setMobileTab] = useState<'editor' | 'preview'>('preview');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
@@ -103,6 +103,7 @@ export default function App() {
       });
       setActiveId(snippet.id);
       setActiveNoteId(null);
+      if (window.innerWidth <= 1200) setSidebarOpen(false);
     },
     [setActiveId, setActiveNoteId]
   );
@@ -111,6 +112,7 @@ export default function App() {
     setActiveNoteId(note.id);
     setActiveId(null);
     setSidebarTab('notes');
+    if (window.innerWidth <= 1200) setSidebarOpen(false);
   }, [setActiveNoteId, setActiveId]);
 
   const handleNewNote = useCallback((categoryId: string) => {
@@ -119,6 +121,7 @@ export default function App() {
     setActiveNoteId(note.id);
     setActiveId(null);
     setSidebarTab('notes');
+    if (window.innerWidth <= 1200) setSidebarOpen(false);
   }, [createNote, saveNote, setActiveNoteId, setActiveId]);
 
   const handleSave = useCallback(() => {
@@ -274,6 +277,9 @@ export default function App() {
 
       {/* Body */}
       <div className={styles.body}>
+        {sidebarOpen && (
+          <div className={styles.backdrop} onClick={() => setSidebarOpen(false)} />
+        )}
         <Sidebar
           categories={categories}
           snippets={snippets}

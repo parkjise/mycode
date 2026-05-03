@@ -264,7 +264,22 @@
   display: none;
 }
 
+/* ─── Sidebar backdrop (≤1200px overlay mode) ───────────────── */
+.backdrop {
+  display: none;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 48px 0 0 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 99;
+  }
+}
+
 @media (max-width: 900px) {
   .brandTag {
     display: none;
@@ -272,10 +287,6 @@
 }
 
 @media (max-width: 768px) {
-  .body {
-    flex-direction: column;
-  }
-
   /* 데스크톱 에디터 토글 버튼 숨김 */
   .editorToggle {
     display: none;

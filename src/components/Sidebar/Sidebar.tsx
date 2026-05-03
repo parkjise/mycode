@@ -48,6 +48,8 @@ interface SidebarProps {
   onSelect: (snippet: Snippet) => void;
   onDelete: (id: string) => void;
   onRename: (id: string, name: string) => void;
+  onMoveSnippet: (id: string, categoryId: string) => void;
+  onMoveNote: (id: string, categoryId: string) => void;
   // Notes tab
   noteCategories: Category[];
   notes: Note[];
@@ -82,6 +84,8 @@ export default function Sidebar({
   onSelect,
   onDelete,
   onRename,
+  onMoveSnippet,
+  onMoveNote,
   noteCategories,
   notes,
   onAddNoteCategory,
@@ -125,6 +129,7 @@ export default function Sidebar({
     x: number;
     y: number;
   } | null>(null);
+  const [showMoveMenu, setShowMoveMenu] = useState(false);
 
   // Active set based on current tab
   const activeCategories = sidebarTab === 'code' ? categories : noteCategories;
@@ -198,6 +203,7 @@ export default function Sidebar({
   const closeContext = () => {
     setContextMenu(null);
     setColorPickerCatId(null);
+    setShowMoveMenu(false);
   };
 
   const startRenameSnippet = (id: string, name: string) => {
@@ -623,6 +629,27 @@ export default function Sidebar({
                   </svg>
                   Rename
                 </button>
+                <button className={styles.ctxItem} onClick={() => setShowMoveMenu((v) => !v)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
+                  </svg>
+                  카테고리 이동
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto' }}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                {showMoveMenu && (
+                  <div className={styles.moveSubmenu}>
+                    {categories.filter((c) => c.id !== snippets.find((s) => s.id === contextMenu.id)?.categoryId).map((c) => (
+                      <button key={c.id} className={styles.moveSubmenuItem} onClick={() => { onMoveSnippet(contextMenu.id, c.id); closeContext(); }}>
+                        <span className={styles.moveDot} style={{ background: c.color }} />
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className={styles.ctxDivider} />
                 <button className={`${styles.ctxItem} ${styles.ctxDanger}`} onClick={() => { onDelete(contextMenu.id); closeContext(); }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
@@ -631,12 +658,35 @@ export default function Sidebar({
                 </button>
               </>
             ) : contextMenu.type === 'note' ? (
-              <button className={`${styles.ctxItem} ${styles.ctxDanger}`} onClick={() => { onDeleteNote(contextMenu.id); closeContext(); }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                </svg>
-                Delete Note
-              </button>
+              <>
+                <button className={styles.ctxItem} onClick={() => setShowMoveMenu((v) => !v)}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>
+                  </svg>
+                  카테고리 이동
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto' }}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                {showMoveMenu && (
+                  <div className={styles.moveSubmenu}>
+                    {noteCategories.filter((c) => c.id !== notes.find((n) => n.id === contextMenu.id)?.categoryId).map((c) => (
+                      <button key={c.id} className={styles.moveSubmenuItem} onClick={() => { onMoveNote(contextMenu.id, c.id); closeContext(); }}>
+                        <span className={styles.moveDot} style={{ background: c.color }} />
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className={styles.ctxDivider} />
+                <button className={`${styles.ctxItem} ${styles.ctxDanger}`} onClick={() => { onDeleteNote(contextMenu.id); closeContext(); }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                  </svg>
+                  Delete Note
+                </button>
+              </>
             ) : (
               <>
                 <button className={styles.ctxItem} onClick={() => {

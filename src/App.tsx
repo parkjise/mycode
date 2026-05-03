@@ -59,6 +59,7 @@ export default function App() {
     saveSnippet,
     deleteSnippet,
     renameSnippet,
+    moveSnippet,
     addCategory,
     renameCategory,
     changeCategoryColor,
@@ -76,6 +77,7 @@ export default function App() {
     setActiveNoteId,
     saveNote,
     deleteNote,
+    moveNote,
     createNote,
     addNoteCategory,
     renameNoteCategory,
@@ -292,6 +294,8 @@ export default function App() {
           onSelect={loadSnippet}
           onDelete={deleteSnippet}
           onRename={renameSnippet}
+          onMoveSnippet={moveSnippet}
+          onMoveNote={moveNote}
           noteCategories={noteCategories}
           notes={notes}
           onAddNoteCategory={addNoteCategory}

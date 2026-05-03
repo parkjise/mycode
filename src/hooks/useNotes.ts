@@ -119,6 +119,23 @@ export function useNotes(userId: string | null, authReady: boolean) {
     }
   }, [userId]);
 
+  const moveNote = useCallback(async (id: string, categoryId: string) => {
+    setNotes((prev) => {
+      const next = prev.map((n) =>
+        n.id === id ? { ...n, categoryId, updatedAt: Date.now() } : n
+      );
+      persist(NOTES_KEY, next);
+      return next;
+    });
+    if (userId && supabase) {
+      await supabase
+        .from('notes')
+        .update({ category_id: categoryId, updated_at: Date.now() })
+        .eq('id', id)
+        .eq('user_id', userId);
+    }
+  }, [userId]);
+
   const createNote = useCallback((categoryId: string): Note => {
     return {
       id: `note-${Date.now()}`,
@@ -245,6 +262,7 @@ export function useNotes(userId: string | null, authReady: boolean) {
     setActiveNoteId,
     saveNote,
     deleteNote,
+    moveNote,
     createNote,
     addNoteCategory,
     renameNoteCategory,

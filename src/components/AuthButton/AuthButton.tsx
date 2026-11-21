@@ -5,6 +5,8 @@ import styles from './AuthButton.module.css';
 interface AuthButtonProps {
   user: User | null;
   loading: boolean;
+  signingIn: boolean;
+  error: string | null;
   syncing: boolean;
   onSignIn: () => void;
   onSignOut: () => void;
@@ -13,6 +15,8 @@ interface AuthButtonProps {
 export default function AuthButton({
   user,
   loading,
+  signingIn,
+  error,
   syncing,
   onSignIn,
   onSignOut,
@@ -30,6 +34,7 @@ export default function AuthButton({
 
     return (
       <div className={styles.userArea}>
+        {error && <span className={styles.authError} role="alert">{error}</span>}
         {syncing && (
           <span className={styles.syncBadge} title="Syncing…">
             <span className={styles.spinner} />
@@ -58,9 +63,13 @@ export default function AuthButton({
   }
 
   return (
+    <div className={styles.authArea}>
     <button
       className={styles.signInBtn}
       onClick={onSignIn}
+      disabled={signingIn}
+      aria-busy={signingIn}
+      aria-describedby={error ? 'auth-error' : undefined}
       title="로그인하면 어떤 기기에서도 스니펫이 동기화됩니다"
     >
       <svg width="15" height="15" viewBox="0 0 24 24">
@@ -69,7 +78,9 @@ export default function AuthButton({
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
       </svg>
-      Google 로그인
+      {signingIn ? '로그인 연결 중…' : 'Google 로그인'}
     </button>
+    {error && <span id="auth-error" className={styles.authError} role="alert">{error}</span>}
+    </div>
   );
 }

@@ -7,6 +7,29 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 export const supabase = url && key ? createClient(url, key) : null;
 export const cloudEnabled = Boolean(supabase);
 
+// OAuth는 서버에 요청하지 않고 이동 URL을 만드므로, 이동 전에 설정을 확인한다.
+export async function checkGoogleAuth(): Promise<void> {
+  if (!url || !key) throw new Error('로그인 설정이 없습니다. 관리자에게 문의해 주세요.');
+
+  let response: Response;
+  try {
+    response = await fetch(`${url.replace(/\/$/, '')}/auth/v1/settings`, {
+      headers: { apikey: key },
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    throw new Error('로그인 서버에 연결할 수 없습니다. 네트워크 연결 또는 Supabase 프로젝트 상태와 주소를 확인해 주세요.');
+  }
+
+  if (!response.ok) {
+    throw new Error(`로그인 서버 설정을 확인할 수 없습니다 (HTTP ${response.status}). 관리자에게 문의해 주세요.`);
+  }
+  const settings = await response.json();
+  if (!settings.external?.google) {
+    throw new Error('Google 로그인이 활성화되어 있지 않습니다. 관리자에게 문의해 주세요.');
+  }
+}
+
 // ─── DB ↔ App 타입 변환 ────────────────────────────────────────
 
 interface DbSnippet {

@@ -37,8 +37,34 @@
   border-color: var(--text-muted);
 }
 
+.signInBtn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.authArea {
+  position: relative;
+}
+
+.authError {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 100;
+  width: min(320px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  background: var(--bg-control);
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
 /* ─── Logged in ──────────────────────────────────────────────── */
 .userArea {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;

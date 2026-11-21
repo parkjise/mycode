@@ -1,0 +1,104 @@
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-app);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-sidebar);
+}
+
+.emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--text-accent);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pasteArea {
+  width: 100%;
+  min-height: 220px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px dashed var(--border-color);
+  background: var(--bg-sidebar);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.pasteArea:focus {
+  border-color: var(--accent);
+  background: var(--bg-control);
+}
+
+.pasteArea::placeholder {
+  color: var(--text-muted);
+}
+
+.statusRow {
+  min-height: 22px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.statusIdle {
+  color: var(--text-muted);
+}
+
+.statusProcessing {
+  color: var(--text-accent);
+}
+
+.statusCompleted {
+  color: #10b981;
+}
+
+.statusFailed {
+  color: #f87171;
+}
+

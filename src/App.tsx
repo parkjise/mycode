@@ -17,6 +17,8 @@ import Sidebar from './components/Sidebar/Sidebar';
 import SaveModal from './components/SaveModal/SaveModal';
 import AuthButton from './components/AuthButton/AuthButton';
 import NoteEditor from './components/NoteEditor/NoteEditor';
+import VueAnswerPasteView from './components/VueAnswerPasteView/VueAnswerPasteView';
+import { isVueAnswerNote } from './lib/vueAnswer';
 import styles from './App.module.css';
 
 const freshState = (): AppState => {
@@ -48,7 +50,7 @@ export default function App() {
   const [lastCodeCategoryId, setLastCodeCategoryId] = useState('general');
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
+  const { user, loading: authLoading, signingIn, error: authError, signInWithGoogle, signOut } = useAuth();
 
   const {
     categories,
@@ -262,6 +264,8 @@ export default function App() {
           <AuthButton
             user={user}
             loading={authLoading}
+            signingIn={signingIn}
+            error={authError}
             syncing={syncing}
             onSignIn={signInWithGoogle}
             onSignOut={signOut}
@@ -319,14 +323,18 @@ export default function App() {
         <div className={styles.workspace}>
           {sidebarTab === 'notes' ? (
             activeNote ? (
-              <NoteEditor
-                note={activeNote}
-                categories={noteCategories}
-                onSave={saveNote}
-                onDelete={(id) => { deleteNote(id); }}
-                onAddCategory={addNoteCategory}
-                theme={state.theme}
-              />
+              isVueAnswerNote(activeNote) ? (
+                <VueAnswerPasteView note={activeNote} />
+              ) : (
+                <NoteEditor
+                  note={activeNote}
+                  categories={noteCategories}
+                  onSave={saveNote}
+                  onDelete={(id) => { deleteNote(id); }}
+                  onAddCategory={addNoteCategory}
+                  theme={state.theme}
+                />
+              )
             ) : (
               <div className={styles.emptyNotes}>
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">

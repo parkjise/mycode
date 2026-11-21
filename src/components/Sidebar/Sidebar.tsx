@@ -130,6 +130,30 @@ export default function Sidebar({
     y: number;
   } | null>(null);
   const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
+
+  const handleCopyNote = async (e: React.MouseEvent, note: Note) => {
+    e.stopPropagation();
+    const temp = document.createElement('div');
+    temp.innerHTML = note.content || '';
+    const text = (temp.innerText || temp.textContent || '').trim();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedNoteId(note.id);
+    setTimeout(() => {
+      setCopiedNoteId((prev) => (prev === note.id ? null : prev));
+    }, 1500);
+  };
 
   // Active set based on current tab
   const activeCategories = sidebarTab === 'code' ? categories : noteCategories;
@@ -431,6 +455,22 @@ export default function Sidebar({
                         <div className={styles.snippetTop}>
                           <span className={styles.noteEmoji}>{note.emoji}</span>
                           <div className={styles.snippetName}>{note.title || '제목 없음'}</div>
+                          <button
+                            className={`${styles.copyBtn} ${copiedNoteId === note.id ? styles.copyBtnCopied : ''}`}
+                            onClick={(e) => handleCopyNote(e, note)}
+                            title={copiedNoteId === note.id ? '복사됨' : '소스 복사'}
+                          >
+                            {copiedNoteId === note.id ? (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            ) : (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                              </svg>
+                            )}
+                          </button>
                           <button
                             className={styles.deleteBtn}
                             onClick={(e) => { e.stopPropagation(); if (confirm('이 노트를 삭제할까요?')) onDeleteNote(note.id); }}

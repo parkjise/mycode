@@ -343,6 +343,19 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
           </ToolbarBtn>
         </div>
         <div className={styles.toolbarRight}>
+          <button
+            type="button"
+            className={styles.clearAllBtn}
+            onClick={() => {
+              if (!editor || editor.isEmpty) return;
+              editor.chain().focus().clearContent().run();
+              triggerSave();
+            }}
+            disabled={editor.isEmpty}
+            title="노트 본문 전체 지우기"
+          >
+            전체 지우기
+          </button>
           <span className={styles.wordCount}>{wordCount} words</span>
         </div>
       </div>

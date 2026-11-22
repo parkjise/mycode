@@ -54,8 +54,9 @@ export function createCodexBridge({ endpoint, publicKey, fetchImpl = fetch, gene
     };
     if (!allowedOrigins.has(origin)) return send(403, { error: '허용되지 않은 사이트입니다.' });
     headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+    headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     headers['Access-Control-Allow-Headers'] = 'authorization, content-type';
+    if (req.url === '/health' && req.method === 'GET') return send(200, { service: 'mycode-codex-bridge' });
     if (req.url !== '/api/codex-answer') return send(404);
     if (req.method === 'OPTIONS') return send(204);
     if (req.method !== 'POST') return send(405);

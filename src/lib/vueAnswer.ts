@@ -4,7 +4,18 @@ import { supabase } from './supabase';
 export const VUE_ANSWER_NOTE_ID = (import.meta.env.VITE_VUE_ANSWER_NOTE_ID as string | undefined)?.trim() || '';
 const configuredUrl = import.meta.env.VITE_VUE_ANSWER_API_URL?.trim();
 export const useCodexBridge = import.meta.env.VITE_VUE_ANSWER_MODE === 'codex';
-const codexBridgeUrl = 'http://127.0.0.1:8798/api/codex-answer';
+const codexBridgeOrigin = 'http://127.0.0.1:8798';
+const loopbackOptions = { mode: 'cors', targetAddressSpace: 'loopback' } as const;
+
+export async function checkCodexBridge() {
+  const response = await fetch(`${codexBridgeOrigin}/health`, {
+    ...loopbackOptions,
+    cache: 'no-store',
+    redirect: 'error',
+    signal: AbortSignal.timeout(8000),
+  });
+  return response.ok && (await response.json()).service === 'mycode-codex-bridge';
+}
 
 function resolveAnswerUrl() {
   try {
@@ -38,7 +49,7 @@ export interface VueAnswerCreateResponse {
  * Never logs or persists the source text.
  */
 export async function requestVueAnswer(plainText: string): Promise<VueAnswerCreateResponse> {
-  const endpoint = useCodexBridge ? codexBridgeUrl : resolveAnswerUrl();
+  const endpoint = useCodexBridge ? `${codexBridgeOrigin}/api/codex-answer` : resolveAnswerUrl();
   if (!endpoint) {
     throw new Error('배포용 답변 서버 주소가 설정되지 않았습니다.');
   }
@@ -64,6 +75,7 @@ export async function requestVueAnswer(plainText: string): Promise<VueAnswerCrea
   let response;
   try {
     response = await fetch(endpoint, {
+      ...(useCodexBridge ? loopbackOptions : {}),
       method: 'POST',
       headers,
       body: JSON.stringify({ text: plainText }),

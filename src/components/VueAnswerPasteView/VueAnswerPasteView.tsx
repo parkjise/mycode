@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Note } from '../../types';
-import { requestVueAnswer, useCodexBridge } from '../../lib/vueAnswer';
+import { checkCodexBridge, requestVueAnswer, useCodexBridge } from '../../lib/vueAnswer';
 import styles from './VueAnswerPasteView.module.css';
 
 interface VueAnswerPasteViewProps {
@@ -13,7 +13,18 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
   const [status, setStatus] = useState<RequestStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastCompletedAt, setLastCompletedAt] = useState<string | null>(null);
+  const [connection, setConnection] = useState('');
   const inFlightRef = useRef(false);
+
+  const checkConnection = async () => {
+    setConnection('Mac 연결 확인 중…');
+    try {
+      if (!await checkCodexBridge()) throw new Error('Unexpected bridge');
+      setConnection('Mac 연결됨');
+    } catch {
+      setConnection('Mac 연결 프로그램 실행과 브라우저의 로컬 네트워크 권한을 확인해 주세요.');
+    }
+  };
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     // Prevent raw text from entering DOM, note content, localStorage, or Supabase
@@ -57,6 +68,12 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
           <p>{useCodexBridge
             ? 'Mac의 Codex에 질문합니다. 공개 코드나 개인 예제만 붙여넣어 주세요. 브라우저가 로컬 연결 권한을 요청할 수 있어요.'
             : '모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.'}</p>
+          {useCodexBridge && (
+            <div className={styles.statusRow}>
+              <button type="button" onClick={checkConnection}>Mac 연결 확인</button>
+              <span role="status">{connection}</span>
+            </div>
+          )}
           <textarea
             className={styles.pasteArea}
             value=""

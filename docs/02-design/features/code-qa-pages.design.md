@@ -16,3 +16,9 @@ Run `codex login status` on the Mac with the intended ChatGPT account, then `npm
 The hosted `VUE_CODEX_OWNER_ID` setting identifies the one approved Supabase user. The bridge checks this identity before running Codex, passes the question on standard input of an ephemeral session, and sends only the generated answer back to the hosted service. Production Code Q&A uses `VITE_VUE_ANSWER_MODE=codex` to route pastes to the bridge. The existing Vue Guide page reads the results through its current answer endpoint. Paste only public code or personal examples. The Mac and bridge must be available at the time of the paste.
 
 Answer deletion uses the signed-in user's token and the `Delete own Code Q&A answers` row policy. The delete request identifies one answer by UUID. Code responses identify each file in the Markdown fence, so Vue Guide can render and copy each file separately.
+
+## Questions from other computers
+
+Run `npm run codex:relay` on the answer Mac and open the loopback login page it prints. Sign in with the same Google account used in MyCode. The Mac keeps this session in memory until the process stops. The `http://127.0.0.1:8799/callback` address is used only for authorizing the Mac, not for submitting questions from another computer.
+
+The public MyCode frontend checks the Mac over a private, owner-scoped Supabase Broadcast channel. It sends questions encrypted with a per-request Web Crypto key and stores no question in the relay database. The Mac decrypts and runs Codex, then stores only the generated answer using the existing answer function.

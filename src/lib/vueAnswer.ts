@@ -1,20 +1,20 @@
 import { Note } from '../types';
 import { supabase } from './supabase';
+import { contactCodex, type VueAnswerCreateResponse } from './codexRelay';
 
 export const VUE_ANSWER_NOTE_ID = (import.meta.env.VITE_VUE_ANSWER_NOTE_ID as string | undefined)?.trim() || '';
 const configuredUrl = import.meta.env.VITE_VUE_ANSWER_API_URL?.trim();
 export const useCodexBridge = import.meta.env.VITE_VUE_ANSWER_MODE === 'codex';
-const codexBridgeOrigin = 'http://127.0.0.1:8798';
-const loopbackOptions = { mode: 'cors', targetAddressSpace: 'loopback' } as const;
+async function answerSession() {
+  if (!supabase) throw new Error('로그인 설정이 없어 요청을 보낼 수 없습니다.');
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session?.access_token) throw new Error('MyCode에 로그인해 주세요.');
+  return { client: supabase, session };
+}
 
 export async function checkCodexBridge() {
-  const response = await fetch(`${codexBridgeOrigin}/health`, {
-    ...loopbackOptions,
-    cache: 'no-store',
-    redirect: 'error',
-    signal: AbortSignal.timeout(8000),
-  });
-  return response.ok && (await response.json()).service === 'mycode-codex-bridge';
+  const { client, session } = await answerSession();
+  await contactCodex(client, session);
 }
 
 function resolveAnswerUrl() {
@@ -38,29 +38,20 @@ export function isVueAnswerNote(note: Pick<Note, 'id'> | null | undefined): bool
   return note.id === VUE_ANSWER_NOTE_ID;
 }
 
-export interface VueAnswerCreateResponse {
-  id: string;
-  status: 'completed';
-  createdAt: string;
-}
-
 /**
  * Sends pasted plain text once to the answer generation server.
  * Never logs or persists the source text.
  */
 export async function requestVueAnswer(plainText: string): Promise<VueAnswerCreateResponse> {
-  const endpoint = useCodexBridge ? `${codexBridgeOrigin}/api/codex-answer` : resolveAnswerUrl();
-  if (!endpoint) {
-    throw new Error('배포용 답변 서버 주소가 설정되지 않았습니다.');
-  }
-  if (!supabase) {
-    throw new Error('로그인 설정이 없어 요청을 보낼 수 없습니다.');
+  const { client, session } = await answerSession();
+  if (useCodexBridge) {
+    const result = await contactCodex(client, session, plainText);
+    if (!result) throw new Error('Codex 답변을 확인하지 못했어요.');
+    return result;
   }
 
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !session?.access_token) {
-    throw new Error('로그인한 사용자만 답변 생성을 요청할 수 있습니다.');
-  }
+  const endpoint = resolveAnswerUrl();
+  if (!endpoint) throw new Error('배포용 답변 서버 주소가 설정되지 않았습니다.');
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -68,24 +59,17 @@ export async function requestVueAnswer(plainText: string): Promise<VueAnswerCrea
   };
   const publicKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   const projectUrl = import.meta.env.VITE_SUPABASE_URL;
-  if (!useCodexBridge && publicKey && projectUrl && new URL(endpoint).origin === new URL(projectUrl).origin) {
+  if (publicKey && projectUrl && new URL(endpoint).origin === new URL(projectUrl).origin) {
     headers.apikey = publicKey;
   }
 
-  let response;
-  try {
-    response = await fetch(endpoint, {
-      ...(useCodexBridge ? loopbackOptions : {}),
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ text: plainText }),
-      redirect: 'error',
-      signal: AbortSignal.timeout(useCodexBridge ? 115000 : 15000),
-    });
-  } catch (error) {
-    if (!useCodexBridge) throw error;
-    throw new Error('Mac의 Codex 연결 프로그램이 실행 중인지, 브라우저에서 로컬 네트워크 접근을 허용했는지 확인해 주세요.');
-  }
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ text: plainText }),
+    redirect: 'error',
+    signal: AbortSignal.timeout(15000),
+  });
 
   if (!response.ok) {
     const errPayload = await response.json().catch(() => ({}));

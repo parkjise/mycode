@@ -14,15 +14,22 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastCompletedAt, setLastCompletedAt] = useState<string | null>(null);
   const [connection, setConnection] = useState('');
+  const [checking, setChecking] = useState(false);
   const inFlightRef = useRef(false);
 
   const checkConnection = async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    setChecking(true);
     setConnection('Mac 연결 확인 중…');
     try {
-      if (!await checkCodexBridge()) throw new Error('Unexpected bridge');
+      await checkCodexBridge();
       setConnection('Mac 연결됨');
-    } catch {
-      setConnection('Mac 연결 프로그램 실행과 브라우저의 로컬 네트워크 권한을 확인해 주세요.');
+    } catch (error) {
+      setConnection(error instanceof Error ? error.message : '답변을 처리하는 Mac에 연결하지 못했어요.');
+    } finally {
+      inFlightRef.current = false;
+      setChecking(false);
     }
   };
 
@@ -70,7 +77,7 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
           )}
           {useCodexBridge && (
             <div className={styles.statusRow}>
-              <button type="button" onClick={checkConnection}>Mac 연결 확인</button>
+              <button type="button" disabled={checking || status === 'processing'} onClick={checkConnection}>Mac 연결 확인</button>
               <span role="status">{connection}</span>
             </div>
           )}

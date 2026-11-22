@@ -66,3 +66,32 @@ test('Edge handler authenticates callers and keeps original text out of the answ
   assert.equal(JSON.stringify(ownList).includes(sourceMarker), false);
   assert.deepEqual(await (await handler(request('GET', 'bob'))).json(), { items: [] });
 });
+
+test('deletion is scoped by answer ID and authenticated owner', async () => {
+  const id = 'eac9b9f0-72d8-4f8a-a530-3090ca3de97f';
+  const stored = new Map([[id, 'alice']]);
+  const handler = createVueAnswerHandler({
+    supabaseUrl: project, anonKey: 'public-key', serviceKey: 'server-key',
+    fetchImpl: async (input, options) => {
+      const url = new URL(input);
+      const user = options.headers.Authorization.split(' ')[1];
+      if (url.pathname === '/auth/v1/user') return Response.json({ id: user });
+      assert.equal(options.method, 'DELETE');
+      assert.equal(options.headers.apikey, 'public-key');
+      assert.equal(url.searchParams.get('id'), `eq.${id}`);
+      assert.equal(url.searchParams.get('user_id'), `eq.${user}`);
+      if (stored.get(id) === user) stored.delete(id);
+      return new Response(null, { status: 204 });
+    },
+  });
+  const remove = (token, target = id) => handler(new Request(`${endpoint}/${target}`, {
+    method: 'DELETE', headers: { Origin: origin, ...(token && { Authorization: `Bearer ${token}` }) },
+  }));
+  assert.equal((await remove()).status, 401);
+  assert.equal((await remove('alice', 'codex')).status, 404);
+  assert.equal((await remove('bob')).status, 204);
+  assert.equal(stored.get(id), 'alice');
+  assert.equal((await remove('alice')).status, 204);
+  assert.equal(stored.has(id), false);
+  assert.equal((await remove('alice')).status, 204);
+});

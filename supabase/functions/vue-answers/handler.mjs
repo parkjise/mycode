@@ -62,11 +62,11 @@ export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, codex
     if (origin && origin !== githubPagesOrigin) return json(403, { error: 'Origin not allowed' });
     if (origin) {
       headers['Access-Control-Allow-Origin'] = origin;
-      headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+      headers['Access-Control-Allow-Methods'] = 'GET, POST, DELETE, OPTIONS';
       headers['Access-Control-Allow-Headers'] = 'authorization, apikey, content-type';
     }
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
-    if (!['GET', 'POST'].includes(request.method)) return json(405, { error: 'Method not allowed' });
+    if (!['GET', 'POST', 'DELETE'].includes(request.method)) return json(405, { error: 'Method not allowed' });
     if (!project || !anonKey || !serviceKey) return json(503, { error: 'Answer service unavailable' });
     const authorization = request.headers.get('Authorization');
     if (!/^Bearer \S+$/i.test(authorization ?? '')) return json(401, { error: 'Unauthorized' });
@@ -79,14 +79,24 @@ export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, codex
       const { id: userId } = await identity.json();
       if (!userId) return json(401, { error: 'Unauthorized' });
 
-      const codexRoute = new URL(request.url).pathname.endsWith('/vue-answers/codex');
+      const pathname = new URL(request.url).pathname;
+      const codexRoute = pathname.endsWith('/vue-answers/codex');
       if (codexOwnerId && userId !== codexOwnerId) return json(403, { error: 'Owner access required' });
+      const tableUrl = new URL(`${project}/rest/v1/mycode_vue_answers`);
+      if (request.method === 'DELETE') {
+        const match = /\/vue-answers\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.exec(pathname);
+        if (!match) return json(404, { error: 'Answer not found' });
+        tableUrl.searchParams.set('id', `eq.${match[1]}`);
+        tableUrl.searchParams.set('user_id', `eq.${userId}`);
+        const response = await fetchImpl(tableUrl, { method: 'DELETE', headers: callerHeaders });
+        if (!response.ok) return json(502, { error: 'Could not delete answer' });
+        return new Response(null, { status: 204, headers });
+      }
       if (codexRoute && !codexOwnerId) return json(503, { error: 'Codex bridge unavailable' });
       if (codexRoute && request.method === 'GET') return new Response(null, { status: 204, headers });
       if (!codexRoute && request.method === 'POST' && codexOwnerId) {
         return json(409, { error: '코덱스 연결을 사용하려면 MyCode를 새로고침해 주세요.' });
       }
-      const tableUrl = new URL(`${project}/rest/v1/mycode_vue_answers`);
       tableUrl.searchParams.set('select', answerColumns);
       if (request.method === 'GET') {
         tableUrl.searchParams.set('user_id', `eq.${userId}`);

@@ -2,6 +2,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseAnswerIds } from '../supabase/functions/vue-answers/answerIds.mjs';
 
 // Load .env if present (without printing or exposing values)
 function loadEnvFile() {
@@ -175,6 +176,27 @@ export function createAnswerServer() {
 
       if (!user) {
         sendJson(res, 401, { error: 'Unauthorized' });
+        return;
+      }
+
+      if (req.method === 'DELETE' && pathname === '/api/vue-answers') {
+        let ids;
+        try {
+          ids = parseAnswerIds((await readJsonBody(req, 8192))?.ids);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid answer IDs' });
+          return;
+        }
+        if (!ids) {
+          sendJson(res, 400, { error: 'Invalid answer IDs' });
+          return;
+        }
+        const selected = new Set(ids);
+        for (let i = answerStore.length - 1; i >= 0; i--) {
+          if (answerStore[i].userId === user.id && selected.has(answerStore[i].id)) answerStore.splice(i, 1);
+        }
+        res.writeHead(204);
+        res.end();
         return;
       }
 

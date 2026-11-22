@@ -95,3 +95,34 @@ test('deletion is scoped by answer ID and authenticated owner', async () => {
   assert.equal(stored.has(id), false);
   assert.equal((await remove('alice')).status, 204);
 });
+
+test('batch deletion validates all IDs and applies one owner-scoped database request', async () => {
+  const own = 'eac9b9f0-72d8-4f8a-a530-3090ca3de97f';
+  const other = 'f04ca958-edd1-414f-be87-b026b53d267a';
+  const ownUnselected = '692a5a42-21a1-45af-99af-e21ae3a87c56';
+  const stored = new Map([[own, 'alice'], [other, 'bob'], [ownUnselected, 'alice']]);
+  let deletes = 0;
+  const handler = createVueAnswerHandler({
+    supabaseUrl: project, anonKey: 'public-key', serviceKey: 'server-key',
+    fetchImpl: async (input, options) => {
+      const url = new URL(input);
+      const user = options.headers.Authorization.split(' ')[1];
+      if (url.pathname === '/auth/v1/user') return Response.json({ id: user });
+      assert.equal(options.method, 'DELETE');
+      assert.equal(options.headers.apikey, 'public-key');
+      assert.equal(url.searchParams.get('id'), `in.(${own},${other})`);
+      assert.equal(url.searchParams.get('user_id'), `eq.${user}`);
+      deletes++;
+      for (const id of [own, other]) if (stored.get(id) === user) stored.delete(id);
+      return new Response(null, { status: 204 });
+    },
+  });
+  const remove = (ids) => handler(request('DELETE', 'alice', { ids }));
+  assert.equal((await remove([])).status, 400);
+  assert.equal((await remove([own, 'not-a-uuid'])).status, 400);
+  assert.equal((await remove(Array(101).fill(own))).status, 400);
+  assert.equal(deletes, 0);
+  assert.equal((await remove([own, other, own.toUpperCase()])).status, 204);
+  assert.equal(deletes, 1);
+  assert.deepEqual([...stored.keys()], [other, ownUnselected]);
+});

@@ -1,5 +1,8 @@
+import { parseAnswerIds } from './answerIds.mjs';
+
 const githubPagesOrigin = 'https://parkjise.github.io';
 const maxBytes = 64 * 1024;
+const bodyTooLarge = Symbol('bodyTooLarge');
 const answerColumns = 'id,title,summary,answer_markdown,created_at';
 
 function publicAnswer(row) {
@@ -13,9 +16,9 @@ function publicAnswer(row) {
   };
 }
 
-async function readText(request, field) {
+async function readJson(request) {
   const reader = request.body?.getReader();
-  if (!reader) return '';
+  if (!reader) return {};
   const decoder = new TextDecoder();
   let total = 0;
   let body = '';
@@ -25,12 +28,11 @@ async function readText(request, field) {
     total += value.byteLength;
     if (total > maxBytes) {
       await reader.cancel();
-      return null;
+      return bodyTooLarge;
     }
     body += decoder.decode(value, { stream: true });
   }
-  const text = JSON.parse(body + decoder.decode())?.[field];
-  return typeof text === 'string' ? text.trim() : '';
+  return JSON.parse(body + decoder.decode());
 }
 
 function buildMockAnswer(text) {
@@ -84,9 +86,23 @@ export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, codex
       if (codexOwnerId && userId !== codexOwnerId) return json(403, { error: 'Owner access required' });
       const tableUrl = new URL(`${project}/rest/v1/mycode_vue_answers`);
       if (request.method === 'DELETE') {
-        const match = /\/vue-answers\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.exec(pathname);
-        if (!match) return json(404, { error: 'Answer not found' });
-        tableUrl.searchParams.set('id', `eq.${match[1]}`);
+        if (pathname.endsWith('/vue-answers')) {
+          let ids;
+          try {
+            const payload = await readJson(request);
+            if (payload === bodyTooLarge) return json(413, { error: 'Request exceeds 64 KB' });
+            ids = parseAnswerIds(payload?.ids);
+          } catch {
+            return json(400, { error: 'Invalid answer IDs' });
+          }
+          if (!ids) return json(400, { error: 'Invalid answer IDs' });
+          tableUrl.searchParams.set('id', `in.(${ids.join(',')})`);
+        } else {
+          const match = /\/vue-answers\/([^/]+)$/.exec(pathname);
+          const ids = parseAnswerIds([match?.[1]]);
+          if (!ids) return json(404, { error: 'Answer not found' });
+          tableUrl.searchParams.set('id', `eq.${ids[0]}`);
+        }
         tableUrl.searchParams.set('user_id', `eq.${userId}`);
         const response = await fetchImpl(tableUrl, { method: 'DELETE', headers: callerHeaders });
         if (!response.ok) return json(502, { error: 'Could not delete answer' });
@@ -109,9 +125,11 @@ export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, codex
 
       let answer;
       try {
-        const text = await readText(request, codexRoute ? 'answerMarkdown' : 'text');
-        if (text === null) return json(413, { error: 'Request exceeds 64 KB' });
-        if (!text) return json(400, { error: 'Plain text is required' });
+        const payload = await readJson(request);
+        if (payload === bodyTooLarge) return json(413, { error: 'Request exceeds 64 KB' });
+        const input = payload?.[codexRoute ? 'answerMarkdown' : 'text'];
+        if (typeof input !== 'string' || !input.trim()) return json(400, { error: 'Plain text is required' });
+        const text = input.trim();
         answer = codexRoute
           ? { title: 'Codex 답변', summary: 'Mac에서 생성한 Code Q&A 답변', answer_markdown: text }
           : buildMockAnswer(text);

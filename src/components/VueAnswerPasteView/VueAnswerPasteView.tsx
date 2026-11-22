@@ -54,6 +54,7 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
 
       <div className={styles.body}>
         <div className={styles.card}>
+          <p>모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.</p>
           <textarea
             className={styles.pasteArea}
             value=""

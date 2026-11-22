@@ -2,7 +2,20 @@ import { Note } from '../types';
 import { supabase } from './supabase';
 
 export const VUE_ANSWER_NOTE_ID = (import.meta.env.VITE_VUE_ANSWER_NOTE_ID as string | undefined)?.trim() || '';
-const VUE_ANSWER_API_URL = (import.meta.env.VITE_VUE_ANSWER_API_URL as string | undefined)?.trim() || 'http://localhost:8787';
+const configuredUrl = import.meta.env.VITE_VUE_ANSWER_API_URL?.trim();
+
+function resolveAnswerUrl() {
+  try {
+    const url = new URL(configuredUrl || (import.meta.env.DEV ? 'http://localhost:8787' : ''));
+    const localHost = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    if (url.protocol !== 'https:' && !(import.meta.env.DEV && localHost && url.protocol === 'http:')) return null;
+    if ((!import.meta.env.DEV && localHost) || url.username || url.password || url.search || url.hash) return null;
+    const path = url.href.replace(/\/$/, '');
+    return url.pathname.replace(/\/$/, '').endsWith('/vue-answers') ? path : `${path}/api/vue-answers`;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Identifies the special `s` note strictly by its unique note ID (never by title).
@@ -23,6 +36,10 @@ export interface VueAnswerCreateResponse {
  * Never logs or persists the source text.
  */
 export async function requestVueAnswer(plainText: string): Promise<VueAnswerCreateResponse> {
+  const endpoint = resolveAnswerUrl();
+  if (!endpoint) {
+    throw new Error('배포용 답변 서버 주소가 설정되지 않았습니다.');
+  }
   if (!supabase) {
     throw new Error('로그인 설정이 없어 요청을 보낼 수 없습니다.');
   }
@@ -32,13 +49,21 @@ export async function requestVueAnswer(plainText: string): Promise<VueAnswerCrea
     throw new Error('로그인한 사용자만 답변 생성을 요청할 수 있습니다.');
   }
 
-  const response = await fetch(`${VUE_ANSWER_API_URL.replace(/\/$/, '')}/api/vue-answers`, {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${session.access_token}`,
+  };
+  const publicKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+  if (publicKey && projectUrl && new URL(endpoint).origin === new URL(projectUrl).origin) {
+    headers.apikey = publicKey;
+  }
+
+  const response = await fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    },
+    headers,
     body: JSON.stringify({ text: plainText }),
+    redirect: 'error',
     signal: AbortSignal.timeout(15000),
   });
 

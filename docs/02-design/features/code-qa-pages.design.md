@@ -8,3 +8,9 @@ Both frontends use the same public Supabase project and an explicit HTTPS answer
 2. Set the public Vite production configuration in `.env.production` `VITE_VUE_ANSWER_NOTE_ID` to the ID of `VUE → s` and `VITE_VUE_ANSWER_API_URL` to `https://<project>.supabase.co/functions/v1/vue-answers`.
 3. Build Vue Guide for GitHub Pages with that same API URL and the same public Supabase configuration. Add `https://parkjise.github.io/vue-guide/` to Supabase's authentication redirect allow list.
 4. Open both published apps with the same test account. Paste a synthetic Vue question into `s`. Confirm that Code Q&A displays its mock answer and an unrelated account cannot see it.
+
+## Personal Codex mode
+
+Run `codex login status` on the Mac with the intended ChatGPT account, then `npm run codex:bridge` from the MyCode folder. Keep the bridge running while using Code Q&A. It listens on `127.0.0.1:8798`. When the browser asks for local network permission, allow the connection only for the official MyCode site on the Mac running the bridge.
+
+The hosted `VUE_CODEX_OWNER_ID` setting identifies the one approved Supabase user. The bridge checks this identity before running Codex, passes the question on standard input of an ephemeral session, and sends only the generated answer back to the hosted service. Production Code Q&A uses `VITE_VUE_ANSWER_MODE=codex` to route pastes to the bridge. The existing Vue Guide page reads the results through its current answer endpoint. Paste only public code or personal examples. The Mac and bridge must be available at the time of the paste.

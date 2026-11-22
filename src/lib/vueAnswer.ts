@@ -3,6 +3,8 @@ import { supabase } from './supabase';
 
 export const VUE_ANSWER_NOTE_ID = (import.meta.env.VITE_VUE_ANSWER_NOTE_ID as string | undefined)?.trim() || '';
 const configuredUrl = import.meta.env.VITE_VUE_ANSWER_API_URL?.trim();
+export const useCodexBridge = import.meta.env.VITE_VUE_ANSWER_MODE === 'codex';
+const codexBridgeUrl = 'http://127.0.0.1:8798/api/codex-answer';
 
 function resolveAnswerUrl() {
   try {
@@ -36,7 +38,7 @@ export interface VueAnswerCreateResponse {
  * Never logs or persists the source text.
  */
 export async function requestVueAnswer(plainText: string): Promise<VueAnswerCreateResponse> {
-  const endpoint = resolveAnswerUrl();
+  const endpoint = useCodexBridge ? codexBridgeUrl : resolveAnswerUrl();
   if (!endpoint) {
     throw new Error('배포용 답변 서버 주소가 설정되지 않았습니다.');
   }
@@ -55,17 +57,23 @@ export async function requestVueAnswer(plainText: string): Promise<VueAnswerCrea
   };
   const publicKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   const projectUrl = import.meta.env.VITE_SUPABASE_URL;
-  if (publicKey && projectUrl && new URL(endpoint).origin === new URL(projectUrl).origin) {
+  if (!useCodexBridge && publicKey && projectUrl && new URL(endpoint).origin === new URL(projectUrl).origin) {
     headers.apikey = publicKey;
   }
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ text: plainText }),
-    redirect: 'error',
-    signal: AbortSignal.timeout(15000),
-  });
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ text: plainText }),
+      redirect: 'error',
+      signal: AbortSignal.timeout(useCodexBridge ? 115000 : 15000),
+    });
+  } catch (error) {
+    if (!useCodexBridge) throw error;
+    throw new Error('Mac의 Codex 연결 프로그램이 실행 중인지, 브라우저에서 로컬 네트워크 접근을 허용했는지 확인해 주세요.');
+  }
 
   if (!response.ok) {
     const errPayload = await response.json().catch(() => ({}));

@@ -13,7 +13,7 @@ function publicAnswer(row) {
   };
 }
 
-async function readText(request) {
+async function readText(request, field) {
   const reader = request.body?.getReader();
   if (!reader) return '';
   const decoder = new TextDecoder();
@@ -29,7 +29,7 @@ async function readText(request) {
     }
     body += decoder.decode(value, { stream: true });
   }
-  const { text } = JSON.parse(body + decoder.decode());
+  const text = JSON.parse(body + decoder.decode())?.[field];
   return typeof text === 'string' ? text.trim() : '';
 }
 
@@ -49,7 +49,7 @@ function buildMockAnswer(text) {
   };
 }
 
-export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, fetchImpl = fetch }) {
+export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, codexOwnerId, fetchImpl = fetch }) {
   const project = supabaseUrl?.replace(/\/$/, '');
   return async (request) => {
     const origin = request.headers.get('Origin');
@@ -79,6 +79,13 @@ export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, fetch
       const { id: userId } = await identity.json();
       if (!userId) return json(401, { error: 'Unauthorized' });
 
+      const codexRoute = new URL(request.url).pathname.endsWith('/vue-answers/codex');
+      if (codexOwnerId && userId !== codexOwnerId) return json(403, { error: 'Owner access required' });
+      if (codexRoute && !codexOwnerId) return json(503, { error: 'Codex bridge unavailable' });
+      if (codexRoute && request.method === 'GET') return new Response(null, { status: 204, headers });
+      if (!codexRoute && request.method === 'POST' && codexOwnerId) {
+        return json(409, { error: '코덱스 연결을 사용하려면 MyCode를 새로고침해 주세요.' });
+      }
       const tableUrl = new URL(`${project}/rest/v1/mycode_vue_answers`);
       tableUrl.searchParams.set('select', answerColumns);
       if (request.method === 'GET') {
@@ -90,14 +97,17 @@ export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, fetch
         return json(200, { items: (await response.json()).map(publicAnswer) });
       }
 
-      let text;
+      let answer;
       try {
-        text = await readText(request);
+        const text = await readText(request, codexRoute ? 'answerMarkdown' : 'text');
+        if (text === null) return json(413, { error: 'Request exceeds 64 KB' });
+        if (!text) return json(400, { error: 'Plain text is required' });
+        answer = codexRoute
+          ? { title: 'Codex 답변', summary: 'Mac에서 생성한 Code Q&A 답변', answer_markdown: text }
+          : buildMockAnswer(text);
       } catch {
         return json(400, { error: 'Invalid request' });
       }
-      if (text === null) return json(413, { error: 'Question exceeds 64 KB' });
-      if (!text) return json(400, { error: 'Plain text is required' });
       const response = await fetchImpl(tableUrl, {
         method: 'POST',
         headers: {
@@ -106,11 +116,11 @@ export function createVueAnswerHandler({ supabaseUrl, anonKey, serviceKey, fetch
           'Content-Type': 'application/json',
           Prefer: 'return=representation',
         },
-        body: JSON.stringify({ user_id: userId, ...buildMockAnswer(text) }),
+        body: JSON.stringify({ user_id: userId, ...answer }),
       });
       if (!response.ok) return json(502, { error: 'Could not create answer' });
-      const [answer] = await response.json();
-      return json(201, { id: answer.id, status: 'completed', createdAt: answer.created_at });
+      const [savedAnswer] = await response.json();
+      return json(201, { id: savedAnswer.id, status: 'completed', createdAt: savedAnswer.created_at });
     } catch {
       return json(502, { error: 'Answer service unavailable' });
     }

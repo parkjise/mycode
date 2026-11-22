@@ -65,9 +65,9 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
 
       <div className={styles.body}>
         <div className={styles.card}>
-          <p>{useCodexBridge
-            ? 'Mac의 Codex에 질문합니다. 공개 코드나 개인 예제만 붙여넣어 주세요. 브라우저가 로컬 연결 권한을 요청할 수 있어요.'
-            : '모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.'}</p>
+          {!useCodexBridge && (
+            <p>모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.</p>
+          )}
           {useCodexBridge && (
             <div className={styles.statusRow}>
               <button type="button" onClick={checkConnection}>Mac 연결 확인</button>

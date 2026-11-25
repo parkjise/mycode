@@ -1,10 +1,18 @@
 const encoder = new TextEncoder();
-const maxQuestionBytes = 40 * 1024;
+const maxQuestionBytes = 100 * 1024;
 export const codexRelayConfig = { config: { private: true, broadcast: { ack: true } } };
 export const codexRelayTopic = (userId) => `mycode-codex:${userId}`;
 export const relayId = (id) => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id);
 
-const encode = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)));
+function encode(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 8192;
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
 const decode = (value) => Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 
 export async function createRelayKeys() {
@@ -23,7 +31,7 @@ async function sharedKey(privateKey, publicKey) {
 
 export async function encryptRelayQuestion(text, recipientKey, id) {
   const bytes = encoder.encode(text);
-  if (!bytes.length || bytes.length > maxQuestionBytes) throw new Error('질문은 40KB 이내로 붙여넣어 주세요.');
+  if (!bytes.length || bytes.length > maxQuestionBytes) throw new Error('질문은 100KB 이내로 붙여넣어 주세요.');
   const sender = await createRelayKeys();
   const key = await sharedKey(sender.privateKey, recipientKey);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
@@ -39,5 +47,6 @@ export async function decryptRelayQuestion(privateKey, packet) {
   }
   const key = await sharedKey(privateKey, publicKey);
   const data = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decode(nonce), additionalData: encoder.encode(id) }, key, decode(ciphertext));
+  if (!data.byteLength || data.byteLength > maxQuestionBytes) throw new Error('Invalid relay question size');
   return new TextDecoder().decode(data);
 }

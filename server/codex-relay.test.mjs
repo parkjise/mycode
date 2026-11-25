@@ -11,7 +11,16 @@ test('relay packets are encrypted and bound to the request ID', async () => {
   assert.doesNotMatch(JSON.stringify(packet), /가짜 예제 질문/);
   assert.equal(await decryptRelayQuestion(keys.privateKey, { ...packet, id }), text);
   await assert.rejects(decryptRelayQuestion(keys.privateKey, { ...packet, id: crypto.randomUUID() }));
-  await assert.rejects(encryptRelayQuestion('가'.repeat(14000), keys.publicKey, id), /40KB/);
+});
+
+test('relay accepts a 100 KB question by UTF-8 byte size and rejects larger ones', async () => {
+  const keys = await createRelayKeys();
+  const id = crypto.randomUUID();
+  const text = 'llm\n' + '가'.repeat(34132);
+  assert.equal(Buffer.byteLength(text), 100 * 1024);
+  const packet = await encryptRelayQuestion(text, keys.publicKey, id);
+  assert.equal(await decryptRelayQuestion(keys.privateKey, { ...packet, id }), text);
+  await assert.rejects(encryptRelayQuestion(`${text}!`, keys.publicKey, id), /100KB/);
 });
 
 test('the Mac worker accepts only probed requests and processes each once', async () => {

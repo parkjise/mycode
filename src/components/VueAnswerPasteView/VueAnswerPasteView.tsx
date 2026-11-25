@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Note } from '../../types';
 import { checkCodexBridge, requestVueAnswer, useCodexBridge } from '../../lib/vueAnswer';
+import type { VueAnswerCreateResponse } from '../../lib/codexRelay';
 import styles from './VueAnswerPasteView.module.css';
 
 interface VueAnswerPasteViewProps {
@@ -12,7 +13,7 @@ type RequestStatus = 'idle' | 'processing' | 'completed' | 'failed';
 export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
   const [status, setStatus] = useState<RequestStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [lastCompletedAt, setLastCompletedAt] = useState<string | null>(null);
+  const [completion, setCompletion] = useState<VueAnswerCreateResponse | null>(null);
   const [connection, setConnection] = useState('');
   const [checking, setChecking] = useState(false);
   const inFlightRef = useRef(false);
@@ -53,7 +54,7 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
     try {
       const result = await requestVueAnswer(plainText);
       setStatus('completed');
-      setLastCompletedAt(result.createdAt);
+      setCompletion(result);
     } catch (err) {
       setStatus('failed');
       setErrorMessage(err instanceof Error ? err.message : '답변 생성 요청에 실패했습니다.');
@@ -86,7 +87,7 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
             value=""
             readOnly
             onPaste={handlePaste}
-            placeholder="여기에 완성된 Vue 코드와 질문을 붙여넣으세요 (Ctrl/Cmd + V)&#10;붙여넣는 즉시 일반 텍스트만 읽어 1회 자동 요청되며, 원문은 저장되지 않습니다."
+            placeholder="Vue 코드와 질문을 붙여넣으세요 (Ctrl/Cmd + V)&#10;Mac에 파일로 저장하려면 첫 줄에 llm만 적어 주세요."
             aria-label="Vue 답변 생성용 붙여넣기 영역"
           />
 
@@ -97,10 +98,12 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
             {status === 'processing' && (
               <span className={styles.statusProcessing}>처리 중...</span>
             )}
-            {status === 'completed' && (
+            {status === 'completed' && completion && (
               <span className={styles.statusCompleted}>
-                완료 · Vue Guide에서 답변을 확인할 수 있습니다
-                {lastCompletedAt ? ` (${new Date(lastCompletedAt).toLocaleTimeString('ko-KR')})` : ''}
+                {completion.localFileCount
+                  ? `완료 · Mac의 llm 폴더에 ${completion.localFileCount}개 파일을 저장했어요.`
+                  : '완료 · Vue Guide에서 답변을 확인할 수 있습니다'}
+                {' '}{`(${new Date(completion.createdAt).toLocaleTimeString('ko-KR')})`}
               </span>
             )}
             {status === 'failed' && (

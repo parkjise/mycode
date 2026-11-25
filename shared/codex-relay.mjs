@@ -4,6 +4,11 @@ export const codexRelayConfig = { config: { private: true, broadcast: { ack: tru
 export const codexRelayTopic = (userId) => `mycode-codex:${userId}`;
 export const relayId = (id) => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id);
 
+export function readLlmRequest(text) {
+  const marker = /^\s*llm[ \t]*(?:\r\n?|\n|$)/.exec(text);
+  return marker ? text.slice(marker[0].length) : null;
+}
+
 function encode(buffer) {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 8192;

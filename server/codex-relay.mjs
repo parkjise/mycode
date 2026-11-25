@@ -4,13 +4,20 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createClient } from '@supabase/supabase-js';
 import { answerWithCodex } from './codex-bridge.mjs';
+import { saveLlmRequest } from './codex-llm-files.mjs';
 import {
-  codexRelayConfig, codexRelayTopic, createRelayKeys, decryptRelayQuestion, relayId,
+  codexRelayConfig, codexRelayTopic, createRelayKeys, decryptRelayQuestion, readLlmRequest, relayId,
 } from '../shared/codex-relay.mjs';
 
 const authAddress = 'http://127.0.0.1:8799';
 
-export async function connectCodexWorker(client, userId, generateAndSaveAnswer, onStatus = () => {}) {
+export async function processRelayQuestion(text, { directory, generate, publishAnswer }) {
+  const question = readLlmRequest(text);
+  if (question !== null) return saveLlmRequest(question, directory, generate);
+  return { answer: await publishAnswer(await generate(text)) };
+}
+
+export async function connectCodexWorker(client, userId, processQuestion, onStatus = () => {}) {
   const keys = await createRelayKeys();
   const channel = client.channel(codexRelayTopic(userId), codexRelayConfig);
   const waiting = new Map();
@@ -27,7 +34,7 @@ export async function connectCodexWorker(client, userId, generateAndSaveAnswer, 
       return;
     }
     if (payload.question === true) waiting.set(id, now + 15000);
-    void broadcast('codex_ready', { id, status: 'ready', publicKey: keys.publicKey }).catch(() => {});
+    void broadcast('codex_ready', { id, status: 'ready', publicKey: keys.publicKey, localFiles: true }).catch(() => {});
   });
 
   channel.on('broadcast', { event: 'codex_question' }, async ({ payload }) => {
@@ -44,8 +51,8 @@ export async function connectCodexWorker(client, userId, generateAndSaveAnswer, 
     try {
       const text = await decryptRelayQuestion(keys.privateKey, payload);
       if (!text.trim()) throw new Error('Empty question');
-      const answer = await generateAndSaveAnswer(text);
-      await broadcast('codex_result', { id, answer }).catch(() => {});
+      const outcome = await processQuestion(text);
+      await broadcast('codex_result', { id, ...outcome }).catch(() => {});
     } catch {
       await broadcast('codex_result', { id, error: 'Mac에서 답변 생성 또는 저장에 실패했어요.' }).catch(() => {});
     } finally {
@@ -76,8 +83,7 @@ function startRelay() {
     redirect: 'error',
     signal: AbortSignal.timeout(10000),
   });
-  const generateAndSave = async (text) => {
-    const answerMarkdown = await answerWithCodex(text);
+  const publishAnswer = async (answerMarkdown) => {
     const { data: { session } } = await client.auth.getSession();
     if (!session) throw new Error('Mac relay authentication expired');
     const result = await requestAnswerService(session, {
@@ -86,6 +92,9 @@ function startRelay() {
     if (result.status !== 201) throw new Error('Could not save Codex answer');
     return result.json();
   };
+  const processQuestion = (text) => processRelayQuestion(text, {
+    directory: process.env.VUE_CODEX_LLM_DIR, generate: answerWithCodex, publishAnswer,
+  });
 
   const server = createServer(async (req, res) => {
     function send(status, message, offerLogin = false) {
@@ -127,7 +136,7 @@ function startRelay() {
         client.auth.startAutoRefresh();
         let markOnline;
         const online = new Promise((resolveOnline) => { markOnline = resolveOnline; });
-        channel = await connectCodexWorker(client, session.user.id, generateAndSave, (status) => {
+        channel = await connectCodexWorker(client, session.user.id, processQuestion, (status) => {
           connected = status === 'SUBSCRIBED';
           if (connected) {
             markOnline();

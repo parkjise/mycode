@@ -13,7 +13,7 @@ const origins = new Set([
 ]);
 const maxBytes = 48 * 1024;
 
-export async function answerWithCodex(text) {
+export async function answerWithCodex(text, { writeFiles = false } = {}) {
   const cwd = await mkdtemp(join(tmpdir(), 'mycode-answer-'));
   const env = Object.fromEntries(['PATH', 'HOME', 'CODEX_HOME', 'USER', 'LANG', 'TMPDIR']
     .filter((key) => process.env[key]).map((key) => [key, process.env[key]]));
@@ -24,6 +24,7 @@ export async function answerWithCodex(text) {
     'For implementation changes, show the changed code snippets before the complete files. Use a Markdown fence per changed file with info `vue changes:src/components/Example.vue` or `css changes:src/styles/example.css` (language, space, changes: plus project-relative path). Show copyable replacement code without diff markers. This section is a code review, with no screenshot or HTML preview.',
     'Keep styling in a separate .css or .scss file whenever the solution adds or changes styles; include that stylesheet as its own complete file. Wire it into the component, preserving scoped styles when applicable, for example with <style scoped src="./Example.css"></style> (with lang="scss" for SCSS). Preserve existing paths and CSS or SCSS conventions when supplied.',
     'When modifying pasted full source, put all complete changed and new project files at the end, one fence per file. Include their full imports, template, and logic as applicable. Preserve unrelated code from the supplied source. Use the fence info format `vue src/components/Example.vue`, `scss src/styles/example.scss`, or `javascript src/data/data.js` (language, space, project-relative path). If the supplied context is insufficient for a complete file, explain what is missing and give an unlabeled snippet instead of presenting a partial file as complete. Explain integration briefly before the file fences. Keep simple conceptual questions direct.',
+    ...(writeFiles ? ['The user requested file output. Include a labeled complete-file fence for each generated file, whether creating an example from scratch or modifying supplied code. Use only project-relative file paths and list each complete file once. When only a filename is requested, use that filename without adding directories. Preserve explicitly requested or existing source paths. Put partial examples in unlabeled fences.'] : []),
     JSON.stringify({ question: text }),
   ].join('\n\n');
   try {

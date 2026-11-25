@@ -1,4 +1,5 @@
 import { Note } from '../types';
+import { readLlmRequest } from '../../shared/codex-relay.mjs';
 import { supabase } from './supabase';
 import { contactCodex, type VueAnswerCreateResponse } from './codexRelay';
 
@@ -49,6 +50,7 @@ export async function requestVueAnswer(plainText: string): Promise<VueAnswerCrea
     if (!result) throw new Error('Codex 답변을 확인하지 못했어요.');
     return result;
   }
+  if (readLlmRequest(plainText) !== null) throw new Error('LLM 작업은 Mac Codex 연결이 필요해요.');
 
   const endpoint = resolveAnswerUrl();
   if (!endpoint) throw new Error('배포용 답변 서버 주소가 설정되지 않았습니다.');

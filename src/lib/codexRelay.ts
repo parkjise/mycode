@@ -1,13 +1,12 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
-import { codexRelayConfig, codexRelayTopic, encryptRelayQuestion } from '../../shared/codex-relay.mjs';
+import { codexRelayConfig, codexRelayTopic, encryptRelayQuestion, readLlmRequest } from '../../shared/codex-relay.mjs';
 
-export interface VueAnswerCreateResponse {
-  id: string;
+export type VueAnswerCreateResponse = {
   status: 'completed';
   createdAt: string;
-}
+} & ({ id: string; localFileCount?: never } | { localFileCount: number; id?: never });
 
-type Ready = { id: string; status: 'ready' | 'busy'; publicKey?: string };
+type Ready = { id: string; status: 'ready' | 'busy'; publicKey?: string; localFiles?: boolean };
 type Result = { id: string; answer?: VueAnswerCreateResponse; error?: string };
 
 function deadline<T>(promise: Promise<T>, milliseconds: number, message: string): Promise<T> {
@@ -49,11 +48,15 @@ export async function contactCodex(
     if (peer.status === 'busy') throw new Error('Mac의 Codex가 이전 질문을 처리 중이에요.');
     if (peer.status !== 'ready' || !peer.publicKey) throw new Error('Mac Codex 연결을 확인하지 못했어요.');
     if (question === undefined) return;
+    const local = readLlmRequest(question) !== null;
+    if (local && peer.localFiles !== true) throw new Error('LLM 작업을 보내려면 Mac 연결 프로그램을 업데이트해 주세요.');
 
     const encrypted = await encryptRelayQuestion(question, peer.publicKey, id);
     const sent = await channel.send({ type: 'broadcast', event: 'codex_question', payload: { id, ...encrypted } });
     if (sent !== 'ok') throw new Error('질문을 Mac에 보내지 못했어요.');
-    const reply = await deadline(result, 110000, '응답을 확인하지 못했어요. Code Q&A에서 답변이 도착했는지 확인해 주세요.');
+    const reply = await deadline(result, 110000, local
+      ? 'Mac의 응답을 확인하지 못했어요. llm 폴더에 파일이 생성됐는지 확인해 주세요.'
+      : '응답을 확인하지 못했어요. Code Q&A에서 답변이 도착했는지 확인해 주세요.');
     if (!reply.answer || reply.answer.status !== 'completed') {
       throw new Error(reply.error || 'Mac에서 Codex 답변을 만들지 못했어요.');
     }

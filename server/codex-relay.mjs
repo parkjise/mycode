@@ -5,19 +5,21 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { createClient } from '@supabase/supabase-js';
 import { answerWithCodex } from './codex-bridge.mjs';
 import { saveLlmRequest } from './codex-llm-files.mjs';
+import { createLlmPublisher } from './codex-llm-publish.mjs';
 import {
   codexRelayConfig, codexRelayTopic, createRelayKeys, decryptRelayQuestion, readLlmRequest, relayId,
 } from '../shared/codex-relay.mjs';
 
 const authAddress = 'http://127.0.0.1:8799';
 
-export async function processRelayQuestion(text, { directory, generate, publishAnswer }) {
+export async function processRelayQuestion(text, { directory, generate, publishAnswer, publishFiles }, publish = false) {
   const question = readLlmRequest(text);
-  if (question !== null) return saveLlmRequest(question, directory, generate);
+  if (publish && (!publishFiles || question === null)) return { error: 'Mac의 자동 배포 설정을 확인해 주세요.' };
+  if (question !== null) return saveLlmRequest(question, directory, generate, publish ? publishFiles : undefined);
   return { answer: await publishAnswer(await generate(text)) };
 }
 
-export async function connectCodexWorker(client, userId, processQuestion, onStatus = () => {}) {
+export async function connectCodexWorker(client, userId, processQuestion, onStatus = () => {}, canPublish = false) {
   const keys = await createRelayKeys();
   const channel = client.channel(codexRelayTopic(userId), codexRelayConfig);
   const waiting = new Map();
@@ -34,7 +36,7 @@ export async function connectCodexWorker(client, userId, processQuestion, onStat
       return;
     }
     if (payload.question === true) waiting.set(id, now + 15000);
-    void broadcast('codex_ready', { id, status: 'ready', publicKey: keys.publicKey, localFiles: true }).catch(() => {});
+    void broadcast('codex_ready', { id, status: 'ready', publicKey: keys.publicKey, localFiles: true, canPublish }).catch(() => {});
   });
 
   channel.on('broadcast', { event: 'codex_question' }, async ({ payload }) => {
@@ -51,7 +53,7 @@ export async function connectCodexWorker(client, userId, processQuestion, onStat
     try {
       const text = await decryptRelayQuestion(keys.privateKey, payload);
       if (!text.trim()) throw new Error('Empty question');
-      const outcome = await processQuestion(text);
+      const outcome = await processQuestion(text, payload.publish === true);
       await broadcast('codex_result', { id, ...outcome }).catch(() => {});
     } catch {
       await broadcast('codex_result', { id, error: 'Mac에서 답변 생성 또는 저장에 실패했어요.' }).catch(() => {});
@@ -66,6 +68,7 @@ export async function connectCodexWorker(client, userId, processQuestion, onStat
 
 function startRelay() {
   process.loadEnvFile();
+  const publishFiles = createLlmPublisher(process.env.VUE_CODEX_LLM_PUBLISH_REPO);
   const project = new URL(process.env.VITE_SUPABASE_URL || '');
   const publicKey = process.env.VITE_SUPABASE_ANON_KEY;
   if (project.protocol !== 'https:' || !project.hostname.endsWith('.supabase.co') || !publicKey) {
@@ -92,9 +95,9 @@ function startRelay() {
     if (result.status !== 201) throw new Error('Could not save Codex answer');
     return result.json();
   };
-  const processQuestion = (text) => processRelayQuestion(text, {
-    directory: process.env.VUE_CODEX_LLM_DIR, generate: answerWithCodex, publishAnswer,
-  });
+  const processQuestion = (text, publish) => processRelayQuestion(text, {
+    directory: process.env.VUE_CODEX_LLM_DIR, generate: answerWithCodex, publishAnswer, publishFiles,
+  }, publish);
 
   const server = createServer(async (req, res) => {
     function send(status, message, offerLogin = false) {
@@ -142,7 +145,7 @@ function startRelay() {
             markOnline();
             console.info('MyCode Codex relay online');
           }
-        });
+        }, Boolean(publishFiles));
         await Promise.race([online, delay(8000, undefined, { ref: false })]);
         res.writeHead(303, { Location: '/status', 'Cache-Control': 'no-store' });
         res.end();

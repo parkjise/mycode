@@ -43,7 +43,7 @@ export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswe
       const plainText = await readText();
       if (!plainText.trim()) throw new Error('붙여넣은 일반 텍스트가 비어 있습니다.');
       const text = localOnly && readLlmRequest(plainText) === null ? `llm\n${plainText}` : plainText;
-      const result = await requestVueAnswer(text);
+      const result = await requestVueAnswer(text, localOnly);
       setStatus('completed');
       setCompletion(result);
     } catch (err) {
@@ -77,6 +77,7 @@ export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswe
 
       <div className={styles.body}>
         <div className={styles.card}>
+          {localOnly && useCodexBridge && <p className={styles.description}>생성 파일은 공개 GitHub 저장소에 커밋되고 GitHub Pages에 배포돼요.</p>}
           {!useCodexBridge && <p>{localOnly
             ? 'LLM 작업은 Mac Codex 연결이 필요해요.'
             : '모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.'}</p>}
@@ -120,6 +121,16 @@ export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswe
               </span>
             )}
           </div>
+          {status === 'completed' && completion?.publication?.status === 'pushed' && (
+            <div className={styles.statusRow}>
+              <span>커밋 완료 · 배포 요청됨</span>
+              <a href={completion.publication.commitUrl} target="_blank" rel="noreferrer">커밋 보기</a>
+              <a href={completion.publication.actionsUrl} target="_blank" rel="noreferrer">배포 상태</a>
+            </div>
+          )}
+          {status === 'completed' && completion?.publication?.status === 'failed' && (
+            <p className={styles.statusFailed} role="status">자동 커밋에 실패했어요. 저장한 파일은 Mac의 llm 폴더에 있어요.</p>
+          )}
         </div>
       </div>
     </div>

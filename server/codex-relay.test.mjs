@@ -14,6 +14,38 @@ test('relay packets are encrypted and bound to the request ID', async () => {
   assert.doesNotMatch(JSON.stringify(packet), /가짜 예제 질문/);
   assert.equal(await decryptRelayQuestion(keys.privateKey, { ...packet, id }), text);
   await assert.rejects(decryptRelayQuestion(keys.privateKey, { ...packet, id: crypto.randomUUID() }));
+  await assert.rejects(decryptRelayQuestion(keys.privateKey, { ...packet, id, publish: true }));
+  const publishingPacket = await encryptRelayQuestion(text, keys.publicKey, id, true);
+  assert.equal(await decryptRelayQuestion(keys.privateKey, { ...publishingPacket, id }), text);
+  await assert.rejects(decryptRelayQuestion(keys.privateKey, { ...publishingPacket, id, publish: false }));
+});
+
+test('publishing receives only the current request files and leaves them on disk on push failure', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'mycode-publish-test-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const options = {
+    directory: root,
+    generate: async (name) => `\`\`\`md ${name}.md\n# Example\n\`\`\``,
+    publishAnswer: () => assert.fail('An llm request must not publish to Code Q&A'),
+    publishFiles: () => assert.fail('A legacy paste must not publish to GitHub'),
+  };
+  await processRelayQuestion('llm\nlocal-only', options);
+  const pushed = await processRelayQuestion('llm\nnew-file', {
+    ...options,
+    async publishFiles(files) {
+      assert.deepEqual([...files], [['new-file.md', '# Example\n']]);
+      assert.equal(await readFile(join(root, 'new-file.md'), 'utf8'), '# Example\n');
+      return { commitUrl: 'https://github.com/owner/repo/commit/abc' };
+    },
+  }, true);
+  assert.equal(pushed.answer.publication.status, 'pushed');
+
+  const failed = await processRelayQuestion('llm\nfailed-push', {
+    ...options,
+    publishFiles: () => { throw new Error('GitHub unavailable'); },
+  }, true);
+  assert.equal(failed.answer.publication.status, 'failed');
+  assert.equal(await readFile(join(root, 'failed-push.md'), 'utf8'), '# Example\n');
 });
 
 test('relay accepts a 100 KB question by UTF-8 byte size and rejects larger ones', async () => {

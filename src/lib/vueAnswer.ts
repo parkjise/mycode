@@ -43,10 +43,10 @@ export function isVueAnswerNote(note: Pick<Note, 'id'> | null | undefined): bool
  * Sends pasted plain text once to the answer generation server.
  * Never logs or persists the source text.
  */
-export async function requestVueAnswer(plainText: string): Promise<VueAnswerCreateResponse> {
+export async function requestVueAnswer(plainText: string, publish = false): Promise<VueAnswerCreateResponse> {
   const { client, session } = await answerSession();
   if (useCodexBridge) {
-    const result = await contactCodex(client, session, plainText);
+    const result = await contactCodex(client, session, plainText, publish);
     if (!result) throw new Error('Codex 답변을 확인하지 못했어요.');
     return result;
   }

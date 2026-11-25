@@ -34,24 +34,26 @@ async function sharedKey(privateKey, publicKey) {
   return crypto.subtle.deriveKey({ name: 'ECDH', public: publicPeer }, privateKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
 
-export async function encryptRelayQuestion(text, recipientKey, id) {
+export async function encryptRelayQuestion(text, recipientKey, id, publish = false) {
   const bytes = encoder.encode(text);
   if (!bytes.length || bytes.length > maxQuestionBytes) throw new Error('질문은 100KB 이내로 붙여넣어 주세요.');
   const sender = await createRelayKeys();
   const key = await sharedKey(sender.privateKey, recipientKey);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
-  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, additionalData: encoder.encode(id) }, key, bytes);
-  return { publicKey: sender.publicKey, nonce: encode(nonce), ciphertext: encode(data) };
+  const additionalData = encoder.encode(publish ? `${id}:publish` : id);
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, additionalData }, key, bytes);
+  return { publicKey: sender.publicKey, nonce: encode(nonce), ciphertext: encode(data), ...(publish ? { publish: true } : {}) };
 }
 
 export async function decryptRelayQuestion(privateKey, packet) {
-  const { id, nonce, ciphertext, publicKey } = packet;
+  const { id, nonce, ciphertext, publicKey, publish } = packet;
   if (!relayId(id) || typeof nonce !== 'string' || nonce.length !== 16 ||
     typeof ciphertext !== 'string' || ciphertext.length > Math.ceil((maxQuestionBytes + 16) / 3) * 4) {
     throw new Error('Invalid relay packet');
   }
   const key = await sharedKey(privateKey, publicKey);
-  const data = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decode(nonce), additionalData: encoder.encode(id) }, key, decode(ciphertext));
+  const additionalData = encoder.encode(publish === true ? `${id}:publish` : id);
+  const data = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decode(nonce), additionalData }, key, decode(ciphertext));
   if (!data.byteLength || data.byteLength > maxQuestionBytes) throw new Error('Invalid relay question size');
   return new TextDecoder().decode(data);
 }

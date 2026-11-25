@@ -43,7 +43,7 @@ function completeFiles(markdown) {
   return files;
 }
 
-async function saveFiles(root, files) {
+export async function saveFiles(root, files) {
   if (!(await lstat(root)).isDirectory()) throw new Error('Invalid file output directory');
   const directory = await realpath(root);
   const createdDirectories = [];
@@ -78,19 +78,29 @@ async function saveFiles(root, files) {
   }
 }
 
-export async function saveLlmRequest(question, directory, generate) {
+export async function saveLlmRequest(question, directory, generate, publishFiles) {
   if (!question.trim()) return { error: 'llm 다음 줄에 파일로 만들 내용과 요청을 적어 주세요.' };
   if (!directory || !isAbsolute(directory)) return { error: 'Mac에 파일 저장 폴더가 설정되어 있지 않아요.' };
 
   const markdown = await generate(question, { writeFiles: true });
+  let files;
   try {
-    const files = completeFiles(markdown);
+    files = completeFiles(markdown);
     if (!files.size) return { error: '저장할 전체 파일을 만들지 못했어요. 파일 이름과 필요한 소스를 요청에 포함해 주세요.' };
     await saveFiles(directory, files);
-    return { answer: { status: 'completed', createdAt: new Date().toISOString(), localFileCount: files.size } };
   } catch (error) {
     return { error: error.code === 'EEXIST'
       ? 'Mac에 파일을 저장하지 못했어요. 같은 이름의 파일이나 경로가 이미 있어요.'
       : 'Mac에 파일을 저장하지 못했어요. 파일 이름과 저장 폴더를 확인해 주세요.' };
   }
+
+  const answer = { status: 'completed', createdAt: new Date().toISOString(), localFileCount: files.size };
+  if (publishFiles) {
+    try {
+      answer.publication = { status: 'pushed', ...await publishFiles(files) };
+    } catch {
+      answer.publication = { status: 'failed' };
+    }
+  }
+  return { answer };
 }

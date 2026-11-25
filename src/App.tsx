@@ -47,6 +47,7 @@ export default function App() {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'code' | 'notes'>('code');
+  const [llmOpen, setLlmOpen] = useState(() => window.location.hash === '#llm');
   const [lastCodeCategoryId, setLastCodeCategoryId] = useState('general');
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -186,15 +187,21 @@ export default function App() {
   }, [setActiveId]);
 
   useEffect(() => {
+    const updateView = () => setLlmOpen(window.location.hash === '#llm');
+    window.addEventListener('hashchange', updateView);
+    return () => window.removeEventListener('hashchange', updateView);
+  }, []);
+
+  useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if (!llmOpen && (e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         if (!activeNoteId && sidebarTab === 'code') handleSave();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, activeNoteId, sidebarTab]);
+  }, [handleSave, activeNoteId, sidebarTab, llmOpen]);
 
   // Auto-select most recent note when on Notes tab with no note open (after refresh or note deletion)
   useEffect(() => {
@@ -212,18 +219,20 @@ export default function App() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <button
-            className={styles.sidebarToggle}
-            onClick={() => setSidebarOpen((v) => !v)}
-            aria-label="Toggle sidebar"
-            title="Toggle sidebar"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <line x1="9" y1="3" x2="9" y2="21"/>
-            </svg>
-          </button>
-          {!isNoteMode && (
+          {!llmOpen && (
+            <button
+              className={styles.sidebarToggle}
+              onClick={() => setSidebarOpen((v) => !v)}
+              aria-label="Toggle sidebar"
+              title="Toggle sidebar"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+              </svg>
+            </button>
+          )}
+          {!llmOpen && !isNoteMode && (
             <button
               className={`${styles.sidebarToggle} ${styles.editorToggle}`}
               onClick={() => setEditorOpen((v) => !v)}
@@ -240,10 +249,13 @@ export default function App() {
             <span className={styles.brandName}>SnipShot</span>
             <span className={styles.brandTag}>Code + Notes</span>
           </div>
+          <a className={styles.llmLink} href={llmOpen ? '#' : '#llm'}>
+            {llmOpen ? '코드 · 노트' : 'LLM'}
+          </a>
         </div>
 
         <div className={styles.headerCenter}>
-          {activeSnippet && !isNoteMode && (
+          {activeSnippet && !llmOpen && !isNoteMode && (
             <div className={styles.activeSnippetBadge}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -252,7 +264,7 @@ export default function App() {
               {savedFeedback && <span className={styles.savedDot} />}
             </div>
           )}
-          {activeNote && isNoteMode && (
+          {activeNote && !llmOpen && isNoteMode && (
             <div className={styles.activeSnippetBadge}>
               <span>{activeNote.emoji}</span>
               <span>{activeNote.title || '제목 없음'}</span>
@@ -282,7 +294,9 @@ export default function App() {
       </header>
 
       {/* Body */}
-      <div className={styles.body}>
+      {llmOpen ? (
+        <div className={styles.body}><VueAnswerPasteView localOnly /></div>
+      ) : <div className={styles.body}>
         {sidebarOpen && (
           <div className={styles.backdrop} onClick={() => setSidebarOpen(false)} />
         )}
@@ -416,10 +430,10 @@ export default function App() {
             </>
           )}
         </div>
-      </div>
+      </div>}
 
       <SaveModal
-        isOpen={saveModalOpen}
+        isOpen={!llmOpen && saveModalOpen}
         categories={categories}
         defaultName={state.fileName.replace(/\.[^.]+$/, '') || 'My Snippet'}
         defaultCategoryId={lastCodeCategoryId}

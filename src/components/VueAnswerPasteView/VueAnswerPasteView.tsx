@@ -1,16 +1,15 @@
 import { useRef, useState } from 'react';
 import { Note } from '../../types';
+import { readLlmRequest } from '../../../shared/codex-relay.mjs';
 import { checkCodexBridge, requestVueAnswer, useCodexBridge } from '../../lib/vueAnswer';
 import type { VueAnswerCreateResponse } from '../../lib/codexRelay';
 import styles from './VueAnswerPasteView.module.css';
 
-interface VueAnswerPasteViewProps {
-  note: Note;
-}
+type VueAnswerPasteViewProps = { note: Note; localOnly?: false } | { note?: never; localOnly: true };
 
 type RequestStatus = 'idle' | 'processing' | 'completed' | 'failed';
 
-export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
+export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswerPasteViewProps) {
   const [status, setStatus] = useState<RequestStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completion, setCompletion] = useState<VueAnswerCreateResponse | null>(null);
@@ -34,25 +33,17 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
     }
   };
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    // Prevent raw text from entering DOM, note content, localStorage, or Supabase
-    e.preventDefault();
-
+  const submit = async (readText: () => string | Promise<string>) => {
     if (inFlightRef.current) return;
-
-    const plainText = e.clipboardData?.getData('text/plain') ?? '';
-    if (!plainText.trim()) {
-      setStatus('failed');
-      setErrorMessage('붙여넣은 일반 텍스트가 비어 있습니다.');
-      return;
-    }
-
     inFlightRef.current = true;
     setStatus('processing');
     setErrorMessage(null);
 
     try {
-      const result = await requestVueAnswer(plainText);
+      const plainText = await readText();
+      if (!plainText.trim()) throw new Error('붙여넣은 일반 텍스트가 비어 있습니다.');
+      const text = localOnly && readLlmRequest(plainText) === null ? `llm\n${plainText}` : plainText;
+      const result = await requestVueAnswer(text);
       setStatus('completed');
       setCompletion(result);
     } catch (err) {
@@ -63,32 +54,49 @@ export default function VueAnswerPasteView({ note }: VueAnswerPasteViewProps) {
     }
   };
 
+  const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    event.preventDefault();
+    void submit(() => event.clipboardData.getData('text/plain'));
+  };
+
+  const pasteFromClipboard = () => submit(async () => {
+    try {
+      return await navigator.clipboard.readText();
+    } catch {
+      throw new Error('클립보드를 읽지 못했어요. 입력칸을 길게 누른 뒤 붙여넣기를 선택해 주세요.');
+    }
+  });
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <span className={styles.emoji}>{note.emoji}</span>
-        <div className={styles.title}>{note.title || '제목 없음'}</div>
+        {note && <span className={styles.emoji}>{note.emoji}</span>}
+        <div className={styles.title}>{localOnly ? 'LLM 작업' : note?.title || '제목 없음'}</div>
         <span className={styles.badge}>붙여넣기 전용</span>
       </div>
 
       <div className={styles.body}>
         <div className={styles.card}>
-          {!useCodexBridge && (
-            <p>모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.</p>
-          )}
+          {!useCodexBridge && <p>{localOnly
+            ? 'LLM 작업은 Mac Codex 연결이 필요해요.'
+            : '모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.'}</p>}
           {useCodexBridge && (
             <div className={styles.statusRow}>
-              <button type="button" disabled={checking || status === 'processing'} onClick={checkConnection}>Mac 연결 확인</button>
+              {localOnly && <button className={styles.pasteButton} type="button" disabled={checking || status === 'processing'} onClick={pasteFromClipboard}>붙여넣고 요청</button>}
+              <button className={styles.connectionButton} type="button" disabled={checking || status === 'processing'} onClick={checkConnection}>Mac 연결 확인</button>
               <span role="status">{connection}</span>
             </div>
           )}
           <textarea
             className={styles.pasteArea}
             value=""
-            readOnly
+            readOnly={!localOnly}
+            onChange={localOnly ? (event) => { event.currentTarget.value = ''; } : undefined}
             onPaste={handlePaste}
-            placeholder="Vue 코드와 질문을 붙여넣으세요 (Ctrl/Cmd + V)&#10;Mac에 파일로 저장하려면 첫 줄에 llm만 적어 주세요."
-            aria-label="Vue 답변 생성용 붙여넣기 영역"
+            placeholder={localOnly
+              ? '여기에 작업 지시를 붙여넣으세요. 생성한 파일은 Mac의 llm 폴더에 저장돼요.'
+              : 'Vue 코드와 질문을 붙여넣으세요 (Ctrl/Cmd + V)'}
+            aria-label={localOnly ? 'LLM 작업 지시 붙여넣기 영역' : 'Vue 답변 생성용 붙여넣기 영역'}
           />
 
           <div className={styles.statusRow} aria-live="polite">

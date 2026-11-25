@@ -17,7 +17,7 @@ export function createLlmPublisher(repository) {
     .filter((key) => process.env[key]).map((key) => [key, process.env[key]]));
   env.GIT_TERMINAL_PROMPT = '0';
 
-  return async (files) => {
+  return async (files, originals) => {
     const checkout = await mkdtemp(join(tmpdir(), 'mycode-llm-publish-'));
     const git = async (...args) => (await exec('git', [
       '-c', 'credential.helper=', '-c', 'credential.helper=!gh auth git-credential',
@@ -28,9 +28,9 @@ export function createLlmPublisher(repository) {
 
     try {
       await git('clone', '--quiet', '--depth=1', '--branch', 'main', '--', `${url}.git`, '.');
-      await saveFiles(checkout, files);
+      await saveFiles(checkout, files, { originals, allowMissingOriginals: true });
       await git('add', '--force', '--', ...files.keys());
-      await git('commit', '--quiet', '-m', 'Add files from MyCode LLM');
+      await git('commit', '--quiet', '-m', originals ? 'Update files from MyCode LLM' : 'Add files from MyCode LLM');
       const commit = await git('rev-parse', 'HEAD');
       await git('push', 'origin', 'HEAD:refs/heads/main');
       return { commitUrl: `${url}/commit/${commit}`, actionsUrl: `${url}/actions` };

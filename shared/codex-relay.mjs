@@ -9,6 +9,13 @@ export function readLlmRequest(text) {
   return marker ? text.slice(marker[0].length) : null;
 }
 
+export function readLlmEdit(question) {
+  const header = /^\s*파일:[ \t]*([^\r\n]*)(?:\r\n?|\n|$)/u.exec(question);
+  if (!header) return null;
+  const paths = header[1].split(',').map((path) => path.trim());
+  return { paths, instruction: question.slice(header[0].length) };
+}
+
 function encode(buffer) {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 8192;

@@ -1,5 +1,5 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
-import { codexRelayConfig, codexRelayTopic, encryptRelayQuestion, readLlmRequest } from '../../shared/codex-relay.mjs';
+import { codexRelayConfig, codexRelayTopic, encryptRelayQuestion, readLlmEdit, readLlmRequest } from '../../shared/codex-relay.mjs';
 
 type Publication = { status: 'pushed'; commitUrl: string; actionsUrl: string } | { status: 'failed' };
 
@@ -8,7 +8,7 @@ export type VueAnswerCreateResponse = {
   createdAt: string;
 } & ({ id: string; localFileCount?: never; publication?: never } | { localFileCount: number; publication?: Publication; id?: never });
 
-type Ready = { id: string; status: 'ready' | 'busy'; publicKey?: string; localFiles?: boolean; canPublish?: boolean };
+type Ready = { id: string; status: 'ready' | 'busy'; publicKey?: string; localFiles?: boolean; canPublish?: boolean; canEdit?: boolean };
 type Result = { id: string; answer?: VueAnswerCreateResponse; error?: string };
 
 function deadline<T>(promise: Promise<T>, milliseconds: number, message: string): Promise<T> {
@@ -51,9 +51,13 @@ export async function contactCodex(
     if (peer.status === 'busy') throw new Error('Mac의 Codex가 이전 질문을 처리 중이에요.');
     if (peer.status !== 'ready' || !peer.publicKey) throw new Error('Mac Codex 연결을 확인하지 못했어요.');
     if (question === undefined) return;
-    const local = readLlmRequest(question) !== null;
+    const llmQuestion = readLlmRequest(question);
+    const local = llmQuestion !== null;
     if (local && peer.localFiles !== true) throw new Error('LLM 작업을 보내려면 Mac 연결 프로그램을 업데이트해 주세요.');
     if (publish && peer.canPublish !== true) throw new Error('Mac 연결 프로그램에서 GitHub 자동 배포를 설정해 주세요.');
+    if (publish && llmQuestion !== null && readLlmEdit(llmQuestion) && peer.canEdit !== true) {
+      throw new Error('기존 파일을 수정하려면 Mac 연결 프로그램을 업데이트해 주세요.');
+    }
 
     const encrypted = await encryptRelayQuestion(question, peer.publicKey, id, publish);
     const sent = await channel.send({ type: 'broadcast', event: 'codex_question', payload: { id, ...encrypted } });

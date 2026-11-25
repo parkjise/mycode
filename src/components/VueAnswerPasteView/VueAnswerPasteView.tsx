@@ -77,7 +77,12 @@ export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswe
 
       <div className={styles.body}>
         <div className={styles.card}>
-          {localOnly && useCodexBridge && <p className={styles.description}>생성 파일은 공개 GitHub 저장소에 커밋되고 GitHub Pages에 배포돼요.</p>}
+          {localOnly && useCodexBridge && (
+            <p className={styles.description}>
+              기존 파일을 수정하려면 첫 줄에 <code>파일: src/App.vue</code>를 적고 다음 줄에 수정 내용을 적어 주세요.
+              {' '}생성하거나 수정한 파일은 공개 GitHub 저장소에 커밋되고 GitHub Pages에 배포돼요.
+            </p>
+          )}
           {!useCodexBridge && <p>{localOnly
             ? 'LLM 작업은 Mac Codex 연결이 필요해요.'
             : '모의 답변 테스트에는 공개 코드나 가짜 예제만 사용해 주세요.'}</p>}
@@ -95,7 +100,7 @@ export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswe
             onChange={localOnly ? (event) => { event.currentTarget.value = ''; } : undefined}
             onPaste={handlePaste}
             placeholder={localOnly
-              ? '여기에 작업 지시를 붙여넣으세요. 생성한 파일은 Mac의 llm 폴더에 저장돼요.'
+              ? '여기에 작업 지시를 붙여넣으세요.'
               : 'Vue 코드와 질문을 붙여넣으세요 (Ctrl/Cmd + V)'}
             aria-label={localOnly ? 'LLM 작업 지시 붙여넣기 영역' : 'Vue 답변 생성용 붙여넣기 영역'}
           />

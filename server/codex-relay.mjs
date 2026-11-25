@@ -7,7 +7,7 @@ import { answerWithCodex } from './codex-bridge.mjs';
 import { saveLlmRequest } from './codex-llm-files.mjs';
 import { createLlmPublisher } from './codex-llm-publish.mjs';
 import {
-  codexRelayConfig, codexRelayTopic, createRelayKeys, decryptRelayQuestion, readLlmRequest, relayId,
+  codexRelayConfig, codexRelayTopic, createRelayKeys, decryptRelayQuestion, readLlmEdit, readLlmRequest, relayId,
 } from '../shared/codex-relay.mjs';
 
 const authAddress = 'http://127.0.0.1:8799';
@@ -15,8 +15,9 @@ const authAddress = 'http://127.0.0.1:8799';
 export async function processRelayQuestion(text, { directory, generate, publishAnswer, publishFiles }, publish = false) {
   const question = readLlmRequest(text);
   if (publish && (!publishFiles || question === null)) return { error: 'Mac의 자동 배포 설정을 확인해 주세요.' };
-  if (question !== null) return saveLlmRequest(question, directory, generate, publish ? publishFiles : undefined);
-  return { answer: await publishAnswer(await generate(text)) };
+  if (question === null) return { answer: await publishAnswer(await generate(text)) };
+  const edit = publish ? readLlmEdit(question) : null;
+  return saveLlmRequest(question, directory, generate, publish ? publishFiles : undefined, edit);
 }
 
 export async function connectCodexWorker(client, userId, processQuestion, onStatus = () => {}, canPublish = false) {
@@ -36,7 +37,7 @@ export async function connectCodexWorker(client, userId, processQuestion, onStat
       return;
     }
     if (payload.question === true) waiting.set(id, now + 15000);
-    void broadcast('codex_ready', { id, status: 'ready', publicKey: keys.publicKey, localFiles: true, canPublish }).catch(() => {});
+    void broadcast('codex_ready', { id, status: 'ready', publicKey: keys.publicKey, localFiles: true, canPublish, canEdit: canPublish }).catch(() => {});
   });
 
   channel.on('broadcast', { event: 'codex_question' }, async ({ payload }) => {

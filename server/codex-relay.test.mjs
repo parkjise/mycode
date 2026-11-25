@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, readFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connectCodexWorker, processRelayQuestion } from './codex-relay.mjs';
+import { saveFiles } from './codex-llm-files.mjs';
 import { createRelayKeys, decryptRelayQuestion, encryptRelayQuestion } from '../shared/codex-relay.mjs';
 
 test('relay packets are encrypted and bound to the request ID', async () => {
@@ -18,6 +19,49 @@ test('relay packets are encrypted and bound to the request ID', async () => {
   const publishingPacket = await encryptRelayQuestion(text, keys.publicKey, id, true);
   assert.equal(await decryptRelayQuestion(keys.privateKey, { ...publishingPacket, id }), text);
   await assert.rejects(decryptRelayQuestion(keys.privateKey, { ...publishingPacket, id, publish: false }));
+});
+
+test('continuation reads and publishes only explicitly selected edits', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'mycode-edit-test-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await saveFiles(root, new Map([['src/App.vue', 'old\n'], ['notes.md', '# Local\n']]));
+  const options = {
+    directory: root,
+    async generate(instruction, context) {
+      assert.equal(instruction, '수정해줘');
+      assert.deepEqual(context.existingFiles, { 'src/App.vue': 'old\n' });
+      return '```vue src/App.vue\nupdated\n```';
+    },
+    publishAnswer: () => assert.fail('An llm request must not publish to Code Q&A'),
+    async publishFiles(files, originals) {
+      assert.deepEqual([...files], [['src/App.vue', 'updated\n']]);
+      assert.deepEqual([...originals], [['src/App.vue', 'old\n']]);
+      return { commitUrl: 'https://github.com/owner/repo/commit/abc' };
+    },
+  };
+  const task = 'llm\n파일: src/App.vue\n수정해줘';
+  const result = await processRelayQuestion(task, options, true);
+  assert.equal(result.answer.publication.status, 'pushed');
+  assert.equal(await readFile(join(root, 'src/App.vue'), 'utf8'), 'updated\n');
+  assert.equal(await readFile(join(root, 'notes.md'), 'utf8'), '# Local\n');
+
+  const rejected = { ...options, publishFiles: () => assert.fail('Invalid edits must not be published') };
+  const unlisted = await processRelayQuestion(task, { ...rejected, generate: async () => '```md notes.md\nchanged\n```' }, true);
+  assert.match(unlisted.error, /지정한 파일만/);
+  const concurrent = await processRelayQuestion(task, {
+    ...rejected,
+    async generate() {
+      await writeFile(join(root, 'src/App.vue'), 'edited while running\n');
+      return '```vue src/App.vue\nreplacement\n```';
+    },
+  }, true);
+  assert.match(concurrent.error, /처리하는 동안 파일이 변경/);
+  assert.equal(await readFile(join(root, 'src/App.vue'), 'utf8'), 'edited while running\n');
+
+  await symlink(root, join(root, 'linked'));
+  const neverGenerate = { ...rejected, generate: () => assert.fail('Invalid file paths must not reach Codex') };
+  assert.match((await processRelayQuestion('llm\n파일: ../notes.md\n수정', neverGenerate, true)).error, /파일 경로/);
+  assert.match((await processRelayQuestion('llm\n파일: linked/notes.md\n수정', neverGenerate, true)).error, /파일을 열 수 없어요/);
 });
 
 test('publishing receives only the current request files and leaves them on disk on push failure', async (t) => {

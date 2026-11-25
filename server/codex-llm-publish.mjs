@@ -32,8 +32,13 @@ export function createLlmPublisher(repository) {
       await git('add', '--force', '--', ...files.keys());
       await git('commit', '--quiet', '-m', originals ? 'Update files from MyCode LLM' : 'Add files from MyCode LLM');
       const commit = await git('rev-parse', 'HEAD');
+      const { stdout } = await exec('gh', ['api', `repos/${repository}`, '--jq', '{private, has_pages}'], {
+        cwd: checkout, env, timeout: 12000, maxBuffer: 128 * 1024,
+      });
+      const access = JSON.parse(stdout);
+      if (access.private !== true || access.has_pages !== false) throw new Error('The GitHub repository must be private and Pages must be disabled');
       await git('push', 'origin', 'HEAD:refs/heads/main');
-      return { commitUrl: `${url}/commit/${commit}`, actionsUrl: `${url}/actions` };
+      return { commitUrl: `${url}/commit/${commit}` };
     } finally {
       await rm(checkout, { recursive: true, force: true });
     }

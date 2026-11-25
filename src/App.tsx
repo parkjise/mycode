@@ -249,9 +249,9 @@ export default function App() {
             <span className={styles.brandName}>SnipShot</span>
             <span className={styles.brandTag}>Code + Notes</span>
           </div>
-          <a className={styles.llmLink} href={llmOpen ? '#' : '#llm'}>
+          {(user || llmOpen) && <a className={styles.llmLink} href={llmOpen ? '#' : '#llm'}>
             {llmOpen ? '코드 · 노트' : 'LLM'}
-          </a>
+          </a>}
         </div>
 
         <div className={styles.headerCenter}>
@@ -295,7 +295,13 @@ export default function App() {
 
       {/* Body */}
       {llmOpen ? (
-        <div className={styles.body}><VueAnswerPasteView localOnly /></div>
+        <div className={styles.body}>
+          {user ? <VueAnswerPasteView localOnly /> : (
+            <main className={styles.emptyNotes}>
+              <p>{authLoading ? '로그인 상태를 확인하고 있어요.' : 'LLM 작업을 하려면 MyCode에 로그인해 주세요.'}</p>
+            </main>
+          )}
+        </div>
       ) : <div className={styles.body}>
         {sidebarOpen && (
           <div className={styles.backdrop} onClick={() => setSidebarOpen(false)} />

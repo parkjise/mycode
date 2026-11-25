@@ -1,7 +1,7 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { codexRelayConfig, codexRelayTopic, encryptRelayQuestion, readLlmEdit, readLlmRequest } from '../../shared/codex-relay.mjs';
 
-type Publication = { status: 'pushed'; commitUrl: string; actionsUrl: string } | { status: 'failed' };
+type Publication = { status: 'pushed'; commitUrl: string } | { status: 'failed' };
 
 export type VueAnswerCreateResponse = {
   status: 'completed';
@@ -54,7 +54,7 @@ export async function contactCodex(
     const llmQuestion = readLlmRequest(question);
     const local = llmQuestion !== null;
     if (local && peer.localFiles !== true) throw new Error('LLM 작업을 보내려면 Mac 연결 프로그램을 업데이트해 주세요.');
-    if (publish && peer.canPublish !== true) throw new Error('Mac 연결 프로그램에서 GitHub 자동 배포를 설정해 주세요.');
+    if (publish && peer.canPublish !== true) throw new Error('Mac 연결 프로그램에서 비공개 GitHub 저장소를 설정해 주세요.');
     if (publish && llmQuestion !== null && readLlmEdit(llmQuestion) && peer.canEdit !== true) {
       throw new Error('기존 파일을 수정하려면 Mac 연결 프로그램을 업데이트해 주세요.');
     }

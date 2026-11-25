@@ -14,7 +14,7 @@ const authAddress = 'http://127.0.0.1:8799';
 
 export async function processRelayQuestion(text, { directory, generate, publishAnswer, publishFiles }, publish = false) {
   const question = readLlmRequest(text);
-  if (publish && (!publishFiles || question === null)) return { error: 'Mac의 자동 배포 설정을 확인해 주세요.' };
+  if (publish && (!publishFiles || question === null)) return { error: 'Mac의 비공개 GitHub 연결 설정을 확인해 주세요.' };
   if (question === null) return { answer: await publishAnswer(await generate(text)) };
   const edit = publish ? readLlmEdit(question) : null;
   return saveLlmRequest(question, directory, generate, publish ? publishFiles : undefined, edit);

@@ -80,7 +80,7 @@ export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswe
           {localOnly && useCodexBridge && (
             <p className={styles.description}>
               기존 파일을 수정하려면 첫 줄에 <code>파일: src/App.vue</code>를 적고 다음 줄에 수정 내용을 적어 주세요.
-              {' '}생성하거나 수정한 파일은 공개 GitHub 저장소에 커밋되고 GitHub Pages에 배포돼요.
+              {' '}생성하거나 수정한 파일은 비공개 GitHub 저장소에 커밋돼요.
             </p>
           )}
           {!useCodexBridge && <p>{localOnly
@@ -128,9 +128,8 @@ export default function VueAnswerPasteView({ note, localOnly = false }: VueAnswe
           </div>
           {status === 'completed' && completion?.publication?.status === 'pushed' && (
             <div className={styles.statusRow}>
-              <span>커밋 완료 · 배포 요청됨</span>
+              <span>비공개 저장소에 커밋 완료</span>
               <a href={completion.publication.commitUrl} target="_blank" rel="noreferrer">커밋 보기</a>
-              <a href={completion.publication.actionsUrl} target="_blank" rel="noreferrer">배포 상태</a>
             </div>
           )}
           {status === 'completed' && completion?.publication?.status === 'failed' && (

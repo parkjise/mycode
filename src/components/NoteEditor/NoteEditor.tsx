@@ -42,6 +42,7 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState(CAT_COLORS[0]);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noteRef = useRef(note);
   noteRef.current = note;
@@ -343,6 +344,32 @@ export default function NoteEditor({ note, categories, onSave, onDelete, onAddCa
           </ToolbarBtn>
         </div>
         <div className={styles.toolbarRight}>
+          <button
+            type="button"
+            className={`${styles.copyCodeBtn} ${copied ? styles.copyCodeBtnCopied : ''}`}
+            onClick={async () => {
+              if (!editor || editor.isEmpty) return;
+              const text = editor.getText({ blockSeparator: '\n' }).trim();
+              try {
+                await navigator.clipboard.writeText(text);
+              } catch {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+              }
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+            disabled={editor.isEmpty}
+            title="노트 본문 코드/텍스트 복사"
+          >
+            {copied ? '복사됨 ✓' : '코드 복사'}
+          </button>
           <button
             type="button"
             className={styles.clearAllBtn}
